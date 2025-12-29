@@ -1,0 +1,15 @@
+fastapi==0.104.1
+
+# 数据库相关（根据您的需求选择）
+# sqlalchemy==2.0.23
+# databases[postgresql]==0.8.0
+# psycopg2-binary==2.9.9
+
+# 认证相关
+# python-jose[cryptography]==3.3.0
+# passlib[bcrypt]==1.7.4
+
+# 其他常用库
+# python-dotenv==1.0.0
+# email-validator==2.1.0
+# httpx==0.25.2

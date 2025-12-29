@@ -1,0 +1,5 @@
+hadoop-hive-spark-jupyter:latest
+hadoop-hive-spark-history:latest
+hadoop-hive-spark-worker:latest
+hadoop-hive-spark-master:latest
+hadoop-hive-spark-base:latest
