@@ -10,7 +10,7 @@ from config import settings
 
 class JWTHandler:
     """JWT令牌处理器"""
-
+    @staticmethod
     def generate_token(user_id: str, expires_in_minutes: Optional[int] = None) -> str:
         """生成JWT令牌
         
@@ -25,8 +25,12 @@ class JWTHandler:
             expires_in_minutes = settings.jwt_expires_minutes
         # 计算过期时间
         expire_at = datetime.now(timezone.utc) + timedelta(minutes=expires_in_minutes)
-        # 构建payload
-        payload = {'user_id': user_id, 'expire_at': expire_at, 'issued_at': datetime.now(timezone.utc)}
+        # 构建payload - 使用时间戳而不是datetime对象
+        payload = {
+            'user_id': user_id, 
+            'expire_at': int(expire_at.timestamp()),
+            'issued_at': int(datetime.now(timezone.utc).timestamp())
+        }
         # 生成JWT令牌
         token = jwt.encode(payload, settings.jwt_secret_key, algorithm=settings.jwt_algorithm)
         return token

@@ -46,9 +46,11 @@ class AuthService:
             db.commit()
             token = JWTHandler().generate_token(user.id)
             return {
-                'message': '登录成功',
-                'token': token,
+                'access_token': token,
+                'token_type': 'bearer',
                 'user_id': user.id,
+                'phone': user.phone,
+                'name': user.username
             }
         except NotFoundError:
             raise

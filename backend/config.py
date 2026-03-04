@@ -10,8 +10,15 @@ class Settings(BaseSettings):
     app_name: str = Field(default='智能超市', alias='APP_NAME')
     app_version: str = Field(default='1.0.0', alias='APP_VERSION')
     debug: bool = Field(default=False, alias='DEBUG')
+    
+    # JWT配置
+    jwt_secret_key: str = Field(default='your_jwt_secret_key', alias='JWT_SECRET_KEY')
+    jwt_algorithm: str = Field(default='HS256', alias='JWT_ALGORITHM')
+    jwt_expires_minutes: int = Field(default=1440, alias='JWT_EXPIRES_MINUTES')
+    
     # 数据库配置
     database_url: str = Field(default='mysql+pymysql://root:Emma19900415@localhost:3307/smart_supermarket', alias='DATABASE_URL')
+    
     # 服务端口配置
     port: int = Field(default=5000, alias='PORT')
 

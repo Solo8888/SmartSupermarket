@@ -4,6 +4,6 @@ pydantic-settings
 fastapi_pagination
 uvicorn[standard]
 passlib
-jwt
+pyjwt
 sqlalchemy
 pymysql
