@@ -30,6 +30,13 @@ class NotFoundError(BusinessException):
         super().__init__(message, error_code)
 
 
+class ConflictError(BusinessException):
+    """资源冲突异常"""
+
+    def __init__(self, message: str = "资源已存在", error_code: str = "CONFLICT"):
+        super().__init__(message, error_code, status.HTTP_409_CONFLICT)
+
+
 async def business_exception_handler(request, exc: BusinessException):
     """处理业务层异常 - 400类错误简单打印"""
     print(f'[客户端错误] {exc.error_code}: {exc.message}')
