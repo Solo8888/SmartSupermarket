@@ -3,3 +3,7 @@ pydantic
 pydantic-settings
 fastapi_pagination
 uvicorn[standard]
+passlib
+jwt
+sqlalchemy
+pymysql
