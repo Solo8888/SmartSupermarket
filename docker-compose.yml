@@ -241,7 +241,7 @@ services:
     networks:
       sparknet:
         ipv4_address: 172.28.1.11
-    command: python main.py
+    command: python run.py
 
   frontend:
     build:
