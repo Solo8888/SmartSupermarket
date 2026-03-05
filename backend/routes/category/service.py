@@ -4,6 +4,8 @@
 from sqlalchemy.orm import Session
 from models.category import Category
 from .schemas import CategoryCreate
+from fastapi_pagination import Page, Params
+from fastapi_pagination.ext.sqlalchemy import paginate as sqlalchemy_paginate
 
 
 class CategoryService:
@@ -52,3 +54,18 @@ class CategoryService:
             "created_at": category.created_at,
             "updated_at": category.updated_at
         }
+
+    @staticmethod
+    def get_categories(db: Session, params: Params) -> Page[Category]:
+        """
+        获取商品类别列表
+
+        Args:
+            db: 数据库会话
+            params: 分页参数
+
+        Returns:
+            商品类别列表（分页）
+        """
+        query = db.query(Category).order_by(Category.sort_order.asc(), Category.id.asc())
+        return sqlalchemy_paginate(query, params=params)

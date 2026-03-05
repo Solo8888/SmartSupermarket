@@ -8,11 +8,11 @@ from config import settings
 engine = create_engine(
     settings.database_url,
     pool_pre_ping=True,
-    pool_size=10,           # 连接池大小
-    max_overflow=20,        # 最大溢出连接数
-    pool_recycle=3600,      # 连接回收时间（秒）
-    pool_timeout=30,        # 连接超时时间（秒）
-    echo=False,             # 是否输出SQL日志
+    pool_size=10,  # 连接池大小
+    max_overflow=20,  # 最大溢出连接数
+    pool_recycle=3600,  # 连接回收时间（秒）
+    pool_timeout=30,  # 连接超时时间（秒）
+    echo=False,  # 是否输出SQL日志
 )
 
 # 创建会话工厂

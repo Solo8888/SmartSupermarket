@@ -94,7 +94,7 @@ class AuthService:
                 created_at=func.current_timestamp(),
                 updated_at=func.current_timestamp()
             )
-            
+
             db.add(user)
             db.commit()
             db.refresh(user)

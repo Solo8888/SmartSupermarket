@@ -16,4 +16,5 @@ class Category(Base):
     sort_order = Column(Integer, default=0, nullable=False, comment='排序顺序')
     status = Column(Enum('active', 'inactive'), default='active', nullable=False, comment='状态')
     created_at = Column(DateTime, default=func.current_timestamp(), nullable=False, comment='创建时间')
-    updated_at = Column(DateTime, default=func.current_timestamp(), onupdate=func.current_timestamp(), nullable=False, comment='更新时间')
+    updated_at = Column(DateTime, default=func.current_timestamp(), onupdate=func.current_timestamp(), nullable=False,
+                        comment='更新时间')
