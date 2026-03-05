@@ -6,6 +6,7 @@ from models.category import Category
 from .schemas import CategoryCreate
 from fastapi_pagination import Page, Params
 from fastapi_pagination.ext.sqlalchemy import paginate as sqlalchemy_paginate
+from core.exceptions import NotFoundError
 
 
 class CategoryService:
@@ -69,3 +70,34 @@ class CategoryService:
         """
         query = db.query(Category).order_by(Category.sort_order.asc(), Category.id.asc())
         return sqlalchemy_paginate(query, params=params)
+
+    @staticmethod
+    def get_category(db: Session, category_id: int) -> dict:
+        """
+        获取单个商品类别详情
+
+        Args:
+            db: 数据库会话
+            category_id: 商品类别ID
+
+        Returns:
+            商品类别详情
+
+        Raises:
+            NotFoundError: 商品类别不存在
+        """
+        category = db.query(Category).filter(Category.id == category_id).first()
+        if not category:
+            raise NotFoundError("商品类别不存在")
+
+        return {
+            "id": category.id,
+            "name": category.name,
+            "parent_id": category.parent_id,
+            "description": category.description,
+            "level": category.level,
+            "sort_order": category.sort_order,
+            "status": category.status,
+            "created_at": category.created_at,
+            "updated_at": category.updated_at
+        }

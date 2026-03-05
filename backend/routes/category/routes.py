@@ -49,3 +49,22 @@ async def get_categories(
         商品类别列表（分页）
     """
     return CategoryService.get_categories(db, params)
+
+
+@category_router.get('/{category_id}', response_model=CategoryResponse)
+async def get_category(
+        category_id: int,
+        db: Session = Depends(get_db)
+):
+    """
+    获取单个商品类别详情接口
+
+    Args:
+        category_id: 商品类别ID
+        db: 数据库会话
+
+    Returns:
+        商品类别详情
+    """
+    category = CategoryService.get_category(db, category_id)
+    return CategoryResponse(**category)
