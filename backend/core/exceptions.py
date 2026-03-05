@@ -5,6 +5,8 @@ import traceback
 from fastapi import status
 from fastapi.responses import JSONResponse
 
+from core.logger import logger
+
 
 class BusinessException(Exception):
     """业务层异常基类"""
@@ -54,7 +56,7 @@ class ConflictError(BusinessException):
 
 async def business_exception_handler(request, exc: BusinessException):
     """处理业务层异常 - 400类错误简单打印"""
-    print(f'[客户端错误] {exc.error_code}: {exc.message}')
+    logger.info(f'[客户端错误] {exc.error_code}: {exc.message}')
     return JSONResponse(
         status_code=exc.status_code,
         content={
@@ -66,12 +68,12 @@ async def business_exception_handler(request, exc: BusinessException):
 
 async def general_exception_handler(request, exc: Exception):
     """处理未预期异常 - 500类错误打印详细错误栈"""
-    print(f'[服务器错误] {type(exc).__name__}: {str(exc)}')
-    traceback.print_exc()
+    logger.error(f'[服务器错误] {type(exc).__name__}: {str(exc)}')
+    logger.error(traceback.format_exc())
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         content={
-            'error_code': 'SERVER_ERROR',
+            'error_code': 'INTERNAL_SERVER_ERROR',
             'message': '服务器内部错误',
         }
     )

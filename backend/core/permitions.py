@@ -7,6 +7,7 @@ from fastapi import Header, Depends
 
 from core.auth import JWTHandler
 from core.exceptions import UnauthorizedError, ClientError
+from core.logger import logger
 from models import User, get_db
 
 # 角色权重级别（用于权限判断）
@@ -90,11 +91,9 @@ def require_role(required_role: str, mode: str = 'gte') -> Callable:
 
         user_id = JWTHandler.verify_token(token)
         user = db.query(User).filter(User.id == user_id).first()
-        print(user_id,user.role)
         if user is None:
             raise UnauthorizedError("用户不存在")
 
-        # 检查角色权限
         user_level = ROLE_HIERARCHY.get(user.role, 0)
         required_level = ROLE_HIERARCHY.get(required_role, 0)
 
