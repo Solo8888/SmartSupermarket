@@ -6,8 +6,8 @@ from typing import Optional
 from datetime import datetime
 
 
-class CategoryBase(BaseModel):
-    """商品类别基础模型"""
+class CategoryCreate(BaseModel):
+    """创建商品类别请求"""
     name: str = Field(..., description="分类名称", max_length=50)
     parent_id: Optional[int] = Field(None, description="父分类ID")
     description: Optional[str] = Field(None, description="分类描述")
@@ -16,13 +16,8 @@ class CategoryBase(BaseModel):
     status: str = Field("active", description="状态", pattern="^(active|inactive)$")
 
 
-class CategoryCreate(CategoryBase):
-    """创建商品类别请求模型"""
-    pass
-
-
 class CategoryUpdate(BaseModel):
-    """更新商品类别请求模型"""
+    """更新商品类别请求"""
     name: Optional[str] = Field(None, description="分类名称", max_length=50)
     parent_id: Optional[int] = Field(None, description="父分类ID")
     description: Optional[str] = Field(None, description="分类描述")
@@ -31,11 +26,17 @@ class CategoryUpdate(BaseModel):
     status: Optional[str] = Field(None, description="状态", pattern="^(active|inactive)$")
 
 
-class CategoryResponse(CategoryBase):
-    """商品类别响应模型"""
-    id: int = Field(..., description="分类ID")
-    created_at: datetime = Field(..., description="创建时间")
-    updated_at: datetime = Field(..., description="更新时间")
+class CategoryResponse(BaseModel):
+    """商品类别响应"""
+    id: int
+    name: str
+    parent_id: Optional[int] = None
+    description: Optional[str] = None
+    level: int
+    sort_order: int
+    status: str
+    created_at: datetime
+    updated_at: datetime
 
     class Config:
         from_attributes = True
