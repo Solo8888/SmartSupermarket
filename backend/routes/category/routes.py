@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from models import get_db, User
 from core.permitions import require_role
-from .schemas import CategoryCreate, CategoryResponse
+from .schemas import CategoryCreate, CategoryResponse, CategoryUpdate
 from .service import CategoryService
 from fastapi_pagination import Page, Params
 
@@ -67,4 +67,27 @@ async def get_category(
         商品类别详情
     """
     category = CategoryService.get_category(db, category_id)
+    return CategoryResponse(**category)
+
+
+@category_router.put('/{category_id}', response_model=CategoryResponse)
+async def update_category(
+        category_id: int,
+        payload: CategoryUpdate,
+        user: User = Depends(require_role('inventory_manager')),
+        db: Session = Depends(get_db)
+):
+    """
+    更新商品类别接口
+
+    Args:
+        category_id: 商品类别ID
+        payload: 更新商品类别请求体
+        user: 当前用户
+        db: 数据库会话
+
+    Returns:
+        更新成功的商品类别信息
+    """
+    category = CategoryService.update_category(db, category_id, payload, user)
     return CategoryResponse(**category)

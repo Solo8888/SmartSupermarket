@@ -3,10 +3,11 @@
 
 from sqlalchemy.orm import Session
 from models.category import Category
-from .schemas import CategoryCreate
+from .schemas import CategoryCreate, CategoryUpdate
 from fastapi_pagination import Page, Params
 from fastapi_pagination.ext.sqlalchemy import paginate as sqlalchemy_paginate
 from core.exceptions import NotFoundError
+from sqlalchemy import func
 
 
 class CategoryService:
@@ -89,6 +90,57 @@ class CategoryService:
         category = db.query(Category).filter(Category.id == category_id).first()
         if not category:
             raise NotFoundError("商品类别不存在")
+
+        return {
+            "id": category.id,
+            "name": category.name,
+            "parent_id": category.parent_id,
+            "description": category.description,
+            "level": category.level,
+            "sort_order": category.sort_order,
+            "status": category.status,
+            "created_at": category.created_at,
+            "updated_at": category.updated_at
+        }
+
+    @staticmethod
+    def update_category(db: Session, category_id: int, payload: CategoryUpdate, user) -> dict:
+        """
+        更新商品类别
+
+        Args:
+            db: 数据库会话
+            category_id: 商品类别ID
+            payload: 更新商品类别请求体
+            user: 当前用户
+
+        Returns:
+            更新成功的商品类别信息
+
+        Raises:
+            NotFoundError: 商品类别不存在
+        """
+        # 获取商品类别
+        category = db.query(Category).filter(Category.id == category_id).first()
+        if not category:
+            raise NotFoundError("商品类别不存在")
+
+        # 检查父分类是否存在（如果提供了parent_id）
+        if payload.parent_id is not None:
+            parent_category = db.query(Category).filter(Category.id == payload.parent_id).first()
+            if not parent_category:
+                raise ValueError("父分类不存在")
+
+        # 更新字段（只更新提供的字段）
+        update_data = payload.model_dump(exclude_unset=True)
+        for field, value in update_data.items():
+            setattr(category, field, value)
+
+        # 更新时间戳
+        category.updated_at = func.current_timestamp()
+
+        db.commit()
+        db.refresh(category)
 
         return {
             "id": category.id,
