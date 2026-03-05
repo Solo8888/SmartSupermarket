@@ -21,6 +21,10 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 # 声明式基类（所有ORM模型都应继承此类）
 Base = declarative_base()
 
+# 导入模型
+from .user import User
+from .category import Category
+
 
 def get_db() -> Session:
     """

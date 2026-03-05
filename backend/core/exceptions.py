@@ -16,6 +16,13 @@ class BusinessException(Exception):
         super().__init__(self.message)
 
 
+class ClientError(BusinessException):
+    """客户端错误（4xx）"""
+
+    def __init__(self, message: str, error_code: str = 'CLIENT_ERROR'):
+        super().__init__(message, error_code, status.HTTP_400_BAD_REQUEST)
+
+
 class ServerError(BusinessException):
     """服务器错误异常"""
 
@@ -28,6 +35,14 @@ class NotFoundError(BusinessException):
 
     def __init__(self, message: str = "资源不存在", error_code: str = "NOT_FOUND"):
         super().__init__(message, error_code)
+
+
+class UnauthorizedError(ClientError):
+    """未授权异常"""
+
+    def __init__(self, message: str = "未授权", error_code: str = "UNAUTHORIZED"):
+        super().__init__(message, error_code)
+        self.status_code = status.HTTP_401_UNAUTHORIZED
 
 
 class ConflictError(BusinessException):
