@@ -153,3 +153,25 @@ class CategoryService:
             "created_at": category.created_at,
             "updated_at": category.updated_at
         }
+
+    @staticmethod
+    def delete_category(db: Session, category_id: int, user) -> None:
+        """
+        删除商品类别
+
+        Args:
+            db: 数据库会话
+            category_id: 商品类别ID
+            user: 当前用户
+
+        Raises:
+            NotFoundError: 商品类别不存在
+        """
+        # 获取商品类别
+        category = db.query(Category).filter(Category.id == category_id).first()
+        if not category:
+            raise NotFoundError("商品类别不存在")
+
+        # 删除商品类别
+        db.delete(category)
+        db.commit()

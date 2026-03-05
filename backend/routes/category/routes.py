@@ -91,3 +91,20 @@ async def update_category(
     """
     category = CategoryService.update_category(db, category_id, payload, user)
     return CategoryResponse(**category)
+
+
+@category_router.delete('/{category_id}', status_code=204)
+async def delete_category(
+        category_id: int,
+        user: User = Depends(require_role('inventory_manager')),
+        db: Session = Depends(get_db)
+):
+    """
+    删除商品类别接口
+
+    Args:
+        category_id: 商品类别ID
+        user: 当前用户
+        db: 数据库会话
+    """
+    CategoryService.delete_category(db, category_id, user)
