@@ -16,6 +16,7 @@ class LoginResponse(BaseModel):
     user_id: int
     phone: str
     name: Optional[str] = None
+    role: Optional[str] = None
 
 
 class RegisterRequest(BaseModel):

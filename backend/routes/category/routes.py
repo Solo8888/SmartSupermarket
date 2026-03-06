@@ -8,6 +8,7 @@ from core.permitions import require_role
 from .schemas import CategoryCreate, CategoryResponse, CategoryUpdate
 from .service import CategoryService
 from fastapi_pagination import Page, Params
+from typing import List
 
 category_router = APIRouter(prefix='/categories', tags=['categories'])
 
@@ -39,7 +40,7 @@ async def get_categories(
         db: Session = Depends(get_db)
 ):
     """
-    获取商品类别列表接口
+    获取商品类别列表接口（分页）
 
     Args:
         params: 分页参数
@@ -49,6 +50,23 @@ async def get_categories(
         商品类别列表（分页）
     """
     return CategoryService.get_categories(db, params)
+
+
+@category_router.get('/all', response_model=List[CategoryResponse])
+async def get_all_categories(
+        db: Session = Depends(get_db)
+):
+    """
+    获取所有商品类别接口（不分页）
+
+    Args:
+        db: 数据库会话
+
+    Returns:
+        所有商品类别列表
+    """
+    categories = CategoryService.get_all_categories(db)
+    return [CategoryResponse(**cat) for cat in categories]
 
 
 @category_router.get('/{category_id}', response_model=CategoryResponse)

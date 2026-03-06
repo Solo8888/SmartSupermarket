@@ -50,7 +50,8 @@ class AuthService:
                 'token_type': 'bearer',
                 'user_id': user.id,
                 'phone': user.phone,
-                'name': user.username
+                'name': user.username,
+                'role': user.role
             }
         except NotFoundError:
             raise

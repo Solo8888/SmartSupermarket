@@ -71,6 +71,33 @@ class CategoryService:
         """
         query = db.query(Category).order_by(Category.sort_order.asc(), Category.id.asc())
         return sqlalchemy_paginate(query, params=params)
+    
+    @staticmethod
+    def get_all_categories(db: Session) -> list:
+        """
+        获取所有商品类别（不分页）
+
+        Args:
+            db: 数据库会话
+
+        Returns:
+            所有商品类别列表
+        """
+        categories = db.query(Category).order_by(Category.sort_order.asc(), Category.id.asc()).all()
+        return [
+            {
+                "id": cat.id,
+                "name": cat.name,
+                "parent_id": cat.parent_id,
+                "description": cat.description,
+                "level": cat.level,
+                "sort_order": cat.sort_order,
+                "status": cat.status,
+                "created_at": cat.created_at,
+                "updated_at": cat.updated_at
+            }
+            for cat in categories
+        ]
 
     @staticmethod
     def get_category(db: Session, category_id: int) -> dict:
