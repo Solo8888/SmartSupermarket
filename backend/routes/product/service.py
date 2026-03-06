@@ -85,3 +85,37 @@ class ProductService:
         query = db.query(Product).order_by(Product.sort_order.asc(), Product.id.asc())
         return sqlalchemy_paginate(query, params=params)
 
+    @staticmethod
+    def get_product(db: Session, product_id: int) -> dict:
+        """
+        获取单个商品详情
+
+        Args:
+            db: 数据库会话
+            product_id: 商品ID
+
+        Returns:
+            商品详情
+
+        Raises:
+            NotFoundError: 商品不存在
+        """
+        product = db.query(Product).filter(Product.id == product_id).first()
+        if not product:
+            raise NotFoundError("商品不存在")
+
+        return {
+            "id": product.id,
+            "name": product.name,
+            "category_id": product.category_id,
+            "barcode": product.barcode,
+            "description": product.description,
+            "price": product.price,
+            "cost_price": product.cost_price,
+            "image_url": product.image_url,
+            "status": product.status,
+            "sort_order": product.sort_order,
+            "created_at": product.created_at,
+            "updated_at": product.updated_at
+        }
+

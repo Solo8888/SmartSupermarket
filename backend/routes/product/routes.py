@@ -51,3 +51,22 @@ async def get_products(
     """
     return ProductService.get_products(db, params)
 
+
+@product_router.get('/{product_id}', response_model=ProductResponse)
+async def get_product(
+        product_id: int,
+        db: Session = Depends(get_db)
+):
+    """
+    获取单个商品详情接口
+
+    Args:
+        product_id: 商品ID
+        db: 数据库会话
+
+    Returns:
+        商品详情
+    """
+    product = ProductService.get_product(db, product_id)
+    return ProductResponse(**product)
+
