@@ -36,6 +36,12 @@ const routes = [
         name: 'Categories',
         component: () => import('../views/admin/Categories.vue'),
         meta: { title: '商品分类管理' }
+      },
+      {
+        path: 'products',
+        name: 'Products',
+        component: () => import('../views/admin/Products.vue'),
+        meta: { title: '商品管理' }
       }
     ]
   }
