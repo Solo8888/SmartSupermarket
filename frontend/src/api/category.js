@@ -9,6 +9,13 @@ export const categoryApi = {
     })
   },
   
+  getAllCategories() {
+    return request({
+      url: '/categories/all',
+      method: 'get'
+    })
+  },
+  
   getCategory(categoryId) {
     return request({
       url: `/categories/${categoryId}`,

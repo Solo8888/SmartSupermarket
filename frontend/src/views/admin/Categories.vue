@@ -1,13 +1,14 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { categoryApi } from '../../api/category'
+import TreeNode from '../../components/TreeNode.vue'
 
 const categories = ref([])
 const loading = ref(false)
 const showModal = ref(false)
 const isEdit = ref(false)
 const currentCategory = ref(null)
-const expandedNodes = ref(new Set())
+const expandedNodes = ref(new Map())
 
 const formData = ref({
   name: '',
@@ -34,7 +35,17 @@ const buildTree = (flatList) => {
     }
   })
   
-  return roots.sort((a, b) => a.sort_order - b.sort_order)
+  const sortChildren = (nodes) => {
+    nodes.sort((a, b) => a.sort_order - b.sort_order)
+    nodes.forEach(node => {
+      if (node.children && node.children.length > 0) {
+        sortChildren(node.children)
+      }
+    })
+  }
+  
+  sortChildren(roots)
+  return roots
 }
 
 const treeCategories = computed(() => {
@@ -44,8 +55,8 @@ const treeCategories = computed(() => {
 const fetchCategories = async () => {
   loading.value = true
   try {
-    const response = await categoryApi.getCategories({ size: 1000 })
-    categories.value = response.items || []
+    const response = await categoryApi.getAllCategories()
+    categories.value = response || []
   } catch (err) {
     console.error('获取分类失败:', err)
   } finally {
@@ -53,22 +64,29 @@ const fetchCategories = async () => {
   }
 }
 
-const toggleExpand = (id) => {
-  if (expandedNodes.value.has(id)) {
-    expandedNodes.value.delete(id)
+const toggleExpand = (node, parentId = null) => {
+  const key = parentId || 'root'
+  
+  if (expandedNodes.value.has(key) && expandedNodes.value.get(key) === node.id) {
+    expandedNodes.value.delete(key)
   } else {
-    expandedNodes.value.add(id)
+    expandedNodes.value.set(key, node.id)
   }
 }
 
-const openCreateModal = (parentId = null) => {
+const isExpanded = (node, parentId = null) => {
+  const key = parentId || 'root'
+  return expandedNodes.value.has(key) && expandedNodes.value.get(key) === node.id
+}
+
+const openCreateModal = (parentId = null, parentLevel = 0) => {
   isEdit.value = false
   currentCategory.value = null
   formData.value = {
     name: '',
     parent_id: parentId,
     description: '',
-    level: parentId ? 2 : 1,
+    level: parentLevel + 1,
     sort_order: 0,
     status: 'active'
   }
@@ -115,32 +133,6 @@ const handleDelete = async (category) => {
   }
 }
 
-const renderTreeNode = (node, level = 0) => {
-  const hasChildren = node.children && node.children.length > 0
-  const isExpanded = expandedNodes.value.has(node.id)
-  
-  return `
-    <div class="tree-node" style="padding-left: ${level * 24}px">
-      <div class="tree-node-content">
-        <span class="expand-icon" @click="toggleExpand(${node.id})" v-if="${hasChildren}">
-          ${isExpanded ? '▼' : '▶'}
-        </span>
-        <span class="expand-placeholder" v-else></span>
-        <span class="node-name">${node.name}</span>
-        <span class="node-status ${node.status}">${node.status === 'active' ? '启用' : '禁用'}</span>
-        <div class="node-actions">
-          <button class="btn-sm btn-primary" @click="openCreateModal(${node.id})">添加子分类</button>
-          <button class="btn-sm btn-secondary" @click="openEditModal(treeCategories.flatMap(n => findNode(n, ${node.id})).find(Boolean))">编辑</button>
-          <button class="btn-sm btn-danger" @click="handleDelete(treeCategories.flatMap(n => findNode(n, ${node.id})).find(Boolean))">删除</button>
-        </div>
-      </div>
-      <div v-if="${hasChildren && isExpanded}" class="tree-children">
-        ${node.children.map(child => renderTreeNode(child, level + 1)).join('')}
-      </div>
-    </div>
-  `
-}
-
 onMounted(() => {
   fetchCategories()
 })
@@ -166,58 +158,19 @@ onMounted(() => {
           暂无分类，点击上方按钮添加
         </div>
         <div v-else class="tree">
-          <template v-for="node in treeCategories" :key="node.id">
-            <div class="tree-node" :style="{ paddingLeft: '0px' }">
-              <div class="tree-node-content">
-                <span class="expand-icon" @click="toggleExpand(node.id)" v-if="node.children && node.children.length > 0">
-                  {{ expandedNodes.has(node.id) ? '▼' : '▶' }}
-                </span>
-                <span class="expand-placeholder" v-else></span>
-                <span class="node-name">{{ node.name }}</span>
-                <span class="node-status" :class="node.status">
-                  {{ node.status === 'active' ? '启用' : '禁用' }}
-                </span>
-                <div class="node-actions">
-                  <button class="btn-sm btn-primary" @click="openCreateModal(node.id)">
-                    添加子分类
-                  </button>
-                  <button class="btn-sm btn-secondary" @click="openEditModal(node)">
-                    编辑
-                  </button>
-                  <button class="btn-sm btn-danger" @click="handleDelete(node)">
-                    删除
-                  </button>
-                </div>
-              </div>
-              <div v-if="node.children && node.children.length > 0 && expandedNodes.has(node.id)" class="tree-children">
-                <template v-for="child in node.children" :key="child.id">
-                  <div class="tree-node" :style="{ paddingLeft: '24px' }">
-                    <div class="tree-node-content">
-                      <span class="expand-icon" @click="toggleExpand(child.id)" v-if="child.children && child.children.length > 0">
-                        {{ expandedNodes.has(child.id) ? '▼' : '▶' }}
-                      </span>
-                      <span class="expand-placeholder" v-else></span>
-                      <span class="node-name">{{ child.name }}</span>
-                      <span class="node-status" :class="child.status">
-                        {{ child.status === 'active' ? '启用' : '禁用' }}
-                      </span>
-                      <div class="node-actions">
-                        <button class="btn-sm btn-primary" @click="openCreateModal(child.id)">
-                          添加子分类
-                        </button>
-                        <button class="btn-sm btn-secondary" @click="openEditModal(child)">
-                          编辑
-                        </button>
-                        <button class="btn-sm btn-danger" @click="handleDelete(child)">
-                          删除
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </template>
-              </div>
-            </div>
-          </template>
+          <TreeNode
+            v-for="node in treeCategories"
+            :key="node.id"
+            :node="node"
+            :level="0"
+            :parent-id="null"
+            :expanded-nodes="expandedNodes"
+            :is-expanded="isExpanded"
+            :toggle-expand="toggleExpand"
+            :open-create-modal="openCreateModal"
+            :open-edit-modal="openEditModal"
+            :handle-delete="handleDelete"
+          />
         </div>
       </div>
     </div>
@@ -299,61 +252,8 @@ onMounted(() => {
   padding: 20px;
 }
 
-.tree-node {
-  border-bottom: 1px solid #f3f4f6;
-}
-
-.tree-node-content {
-  display: flex;
-  align-items: center;
-  padding: 12px 16px;
-  gap: 12px;
-  transition: background-color 0.2s;
-}
-
-.tree-node-content:hover {
-  background-color: #f9fafb;
-}
-
-.expand-icon {
-  width: 20px;
-  text-align: center;
-  cursor: pointer;
-  color: #6b7280;
-  font-size: 12px;
-  user-select: none;
-}
-
-.expand-placeholder {
-  width: 20px;
-}
-
-.node-name {
-  flex: 1;
-  font-weight: 500;
-  color: #374151;
-}
-
-.node-status {
-  padding: 4px 12px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 500;
-}
-
-.node-status.active {
-  background-color: #d1fae5;
-  color: #065f46;
-}
-
-.node-status.inactive {
-  background-color: #fee2e2;
-  color: #991b1b;
-}
-
-.node-actions {
-  display: flex;
-  gap: 8px;
+.tree {
+  border-top: 1px solid #f3f4f6;
 }
 
 .btn {
@@ -382,21 +282,6 @@ onMounted(() => {
 
 .btn-secondary:hover {
   background-color: #e5e7eb;
-}
-
-.btn-sm {
-  padding: 6px 12px;
-  font-size: 13px;
-  border-radius: 6px;
-}
-
-.btn-danger {
-  background-color: #fee2e2;
-  color: #dc2626;
-}
-
-.btn-danger:hover {
-  background-color: #fecaca;
 }
 
 .modal-overlay {
@@ -502,16 +387,6 @@ onMounted(() => {
     flex-direction: column;
     gap: 12px;
     align-items: flex-start;
-  }
-  
-  .tree-node-content {
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-  
-  .node-actions {
-    width: 100%;
-    justify-content: flex-start;
   }
   
   .modal {
