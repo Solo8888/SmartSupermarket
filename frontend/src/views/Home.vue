@@ -128,4 +128,92 @@ const handleLogout = () => {
   font-size: 16px;
   margin: 12px 0;
 }
+
+@media (max-width: 768px) {
+  .header-content {
+    flex-direction: column;
+    gap: 12px;
+    padding: 0 16px;
+  }
+
+  .logo {
+    font-size: 20px;
+  }
+
+  .user-info {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .user-info span {
+    font-size: 14px;
+  }
+
+  .logout-button {
+    padding: 6px 16px;
+    font-size: 13px;
+  }
+
+  .main {
+    padding: 32px 16px;
+  }
+
+  .welcome-card {
+    padding: 32px 24px;
+  }
+
+  .welcome-card h2 {
+    font-size: 26px;
+  }
+
+  .welcome-card p {
+    font-size: 16px;
+  }
+
+  .user-details {
+    padding: 20px;
+  }
+
+  .user-details p {
+    font-size: 15px;
+  }
+}
+
+@media (max-width: 480px) {
+  .header {
+    padding: 12px 0;
+  }
+
+  .logo {
+    font-size: 18px;
+  }
+
+  .main {
+    padding: 24px 12px;
+  }
+
+  .welcome-card {
+    padding: 24px 20px;
+    border-radius: 10px;
+  }
+
+  .welcome-card h2 {
+    font-size: 22px;
+    margin-bottom: 12px;
+  }
+
+  .welcome-card p {
+    font-size: 15px;
+    margin-bottom: 24px;
+  }
+
+  .user-details {
+    padding: 16px;
+  }
+
+  .user-details p {
+    font-size: 14px;
+    margin: 10px 0;
+  }
+}
 </style>

@@ -130,7 +130,7 @@ const goToLogin = () => {
   align-items: center;
   justify-content: center;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  padding: 20px 0;
+  padding: 20px;
 }
 
 .register-card {
@@ -248,5 +248,83 @@ const goToLogin = () => {
 
 .login-link a:hover {
   text-decoration: underline;
+}
+
+@media (max-width: 480px) {
+  .register-container {
+    padding: 16px;
+  }
+
+  .register-card {
+    padding: 24px;
+    border-radius: 10px;
+  }
+
+  .title {
+    font-size: 20px;
+  }
+
+  .subtitle {
+    font-size: 16px;
+    margin-bottom: 24px;
+  }
+
+  .register-form {
+    gap: 14px;
+  }
+
+  .form-group input {
+    padding: 10px 14px;
+    font-size: 15px;
+  }
+
+  .register-button {
+    padding: 12px;
+    font-size: 15px;
+  }
+
+  .login-link {
+    margin-top: 20px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 360px) {
+  .register-card {
+    padding: 20px;
+  }
+
+  .title {
+    font-size: 18px;
+  }
+
+  .subtitle {
+    font-size: 14px;
+    margin-bottom: 20px;
+  }
+
+  .register-form {
+    gap: 12px;
+  }
+
+  .form-group label {
+    font-size: 13px;
+  }
+
+  .form-group input {
+    padding: 9px 12px;
+    font-size: 14px;
+  }
+
+  .register-button {
+    padding: 11px;
+    font-size: 14px;
+  }
+
+  .error-message,
+  .success-message {
+    font-size: 13px;
+    padding: 6px;
+  }
 }
 </style>

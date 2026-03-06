@@ -87,6 +87,7 @@ const goToRegister = () => {
   align-items: center;
   justify-content: center;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 20px;
 }
 
 .login-card {
@@ -194,5 +195,78 @@ const goToRegister = () => {
 
 .register-link a:hover {
   text-decoration: underline;
+}
+
+@media (max-width: 480px) {
+  .login-container {
+    padding: 16px;
+  }
+
+  .login-card {
+    padding: 24px;
+    border-radius: 10px;
+  }
+
+  .title {
+    font-size: 20px;
+  }
+
+  .subtitle {
+    font-size: 16px;
+    margin-bottom: 24px;
+  }
+
+  .login-form {
+    gap: 16px;
+  }
+
+  .form-group input {
+    padding: 10px 14px;
+    font-size: 15px;
+  }
+
+  .login-button {
+    padding: 12px;
+    font-size: 15px;
+  }
+
+  .register-link {
+    margin-top: 20px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 360px) {
+  .login-card {
+    padding: 20px;
+  }
+
+  .title {
+    font-size: 18px;
+  }
+
+  .subtitle {
+    font-size: 14px;
+    margin-bottom: 20px;
+  }
+
+  .form-group label {
+    font-size: 13px;
+  }
+
+  .form-group input {
+    padding: 9px 12px;
+    font-size: 14px;
+  }
+
+  .login-button {
+    padding: 11px;
+    font-size: 14px;
+  }
+
+  .error-message {
+    font-size: 13px;
+    padding: 6px;
+  }
 }
 </style>
