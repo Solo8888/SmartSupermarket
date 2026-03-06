@@ -2,16 +2,21 @@
 import { ref, onMounted } from 'vue'
 import { productApi } from '../../api/product'
 import { categoryApi } from '../../api/category'
+import { uploadApi } from '../../api/upload'
+import CategoryCascader from '../../components/CategoryCascader.vue'
 
 const products = ref([])
 const categories = ref([])
 const loading = ref(false)
+const uploading = ref(false)
 const showModal = ref(false)
 const isEdit = ref(false)
 const currentProduct = ref(null)
 const page = ref(1)
 const size = ref(10)
 const total = ref(0)
+const imagePreview = ref('')
+const imageFile = ref(null)
 
 const formData = ref({
   name: '',
@@ -50,6 +55,8 @@ const fetchCategories = async () => {
 const openCreateModal = () => {
   isEdit.value = false
   currentProduct.value = null
+  imagePreview.value = ''
+  imageFile.value = null
   formData.value = {
     name: '',
     category_id: null,
@@ -67,6 +74,8 @@ const openCreateModal = () => {
 const openEditModal = (product) => {
   isEdit.value = true
   currentProduct.value = product
+  imagePreview.value = product.image_url || ''
+  imageFile.value = null
   formData.value = {
     name: product.name,
     category_id: product.category_id,
@@ -79,6 +88,40 @@ const openEditModal = (product) => {
     sort_order: product.sort_order
   }
   showModal.value = true
+}
+
+const handleImageChange = (e) => {
+  const file = e.target.files[0]
+  if (file) {
+    imageFile.value = file
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      imagePreview.value = e.target.result
+    }
+    reader.readAsDataURL(file)
+  }
+}
+
+const handleImageUpload = async () => {
+  if (!imageFile.value) {
+    return
+  }
+  uploading.value = true
+  try {
+    const response = await uploadApi.uploadImage(imageFile.value)
+    formData.value.image_url = response.url
+    imagePreview.value = response.url
+  } catch (err) {
+    console.error('上传图片失败:', err)
+  } finally {
+    uploading.value = false
+  }
+}
+
+const clearImage = () => {
+  imagePreview.value = ''
+  imageFile.value = null
+  formData.value.image_url = ''
 }
 
 const handleSubmit = async () => {
@@ -156,6 +199,7 @@ onMounted(() => {
             <table class="product-table">
               <thead>
                 <tr>
+                  <th>图片</th>
                   <th>商品名称</th>
                   <th>分类</th>
                   <th>条码</th>
@@ -168,6 +212,12 @@ onMounted(() => {
               </thead>
               <tbody>
                 <tr v-for="product in products" :key="product.id">
+                  <td>
+                    <div v-if="product.image_url" class="product-image">
+                      <img :src="product.image_url" :alt="product.name" />
+                    </div>
+                    <span v-else class="no-image">-</span>
+                  </td>
                   <td class="product-name">{{ product.name }}</td>
                   <td>{{ getCategoryName(product.category_id) }}</td>
                   <td>{{ product.barcode || '-' }}</td>
@@ -230,20 +280,19 @@ onMounted(() => {
               <input v-model="formData.name" type="text" placeholder="请输入商品名称" />
             </div>
             <div class="form-group">
-              <label>分类</label>
-              <select v-model="formData.category_id">
-                <option :value="null">请选择分类</option>
-                <option v-for="cat in categories" :key="cat.id" :value="cat.id">
-                  {{ cat.name }}
-                </option>
-              </select>
+              <label>条码</label>
+              <input v-model="formData.barcode" type="text" placeholder="请输入商品条码" />
             </div>
           </div>
           
           <div class="form-row">
             <div class="form-group">
-              <label>条码</label>
-              <input v-model="formData.barcode" type="text" placeholder="请输入商品条码" />
+              <label>分类</label>
+              <CategoryCascader 
+                v-model="formData.category_id" 
+                :categories="categories"
+                placeholder="请选择分类"
+              />
             </div>
             <div class="form-group">
               <label>排序</label>
@@ -272,8 +321,35 @@ onMounted(() => {
           </div>
           
           <div class="form-group">
-            <label>图片URL</label>
-            <input v-model="formData.image_url" type="text" placeholder="请输入商品图片URL" />
+            <label>商品图片</label>
+            <div class="image-upload-area">
+              <div v-if="imagePreview" class="image-preview">
+                <img :src="imagePreview" alt="预览" />
+                <button type="button" class="clear-image-btn" @click="clearImage">×</button>
+              </div>
+              <div v-else class="image-placeholder">
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  @change="handleImageChange"
+                  ref="fileInput"
+                  style="display: none"
+                />
+                <button type="button" class="btn btn-secondary" @click="$refs.fileInput.click()">
+                  选择图片
+                </button>
+              </div>
+              <div v-if="imageFile && !formData.image_url" class="upload-btn-wrapper">
+                <button 
+                  type="button" 
+                  class="btn btn-primary" 
+                  :disabled="uploading"
+                  @click="handleImageUpload"
+                >
+                  {{ uploading ? '上传中...' : '上传图片' }}
+                </button>
+              </div>
+            </div>
           </div>
           
           <div class="form-group">
@@ -354,6 +430,23 @@ onMounted(() => {
 .product-table td {
   color: #4b5563;
   font-size: 14px;
+}
+
+.product-image {
+  width: 60px;
+  height: 60px;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.product-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.no-image {
+  color: #9ca3af;
 }
 
 .product-name {
@@ -551,6 +644,65 @@ onMounted(() => {
   resize: vertical;
 }
 
+.image-upload-area {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.image-preview {
+  position: relative;
+  width: 200px;
+  height: 200px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.image-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.clear-image-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.clear-image-btn:hover {
+  background: rgba(0, 0, 0, 0.8);
+}
+
+.image-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 200px;
+  height: 200px;
+  border: 2px dashed #d1d5db;
+  border-radius: 8px;
+  background: #f9fafb;
+}
+
+.upload-btn-wrapper {
+  display: flex;
+  gap: 12px;
+}
+
 .modal-footer {
   display: flex;
   justify-content: flex-end;
@@ -574,6 +726,11 @@ onMounted(() => {
   .product-table td {
     padding: 8px 12px;
     font-size: 13px;
+  }
+  
+  .product-image {
+    width: 50px;
+    height: 50px;
   }
   
   .actions {
