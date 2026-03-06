@@ -27,10 +27,9 @@ class ProductService:
             创建成功的商品信息
         """
         # 检查分类是否存在
-        if payload.category_id:
-            category = db.query(Category).filter(Category.id == payload.category_id).first()
-            if not category:
-                raise ValueError("分类不存在")
+        category = db.query(Category).filter(Category.id == payload.category_id).first()
+        if not category:
+            raise ValueError("分类不存在")
 
         # 检查条码是否已存在
         if payload.barcode:
@@ -42,13 +41,14 @@ class ProductService:
         product = Product(
             name=payload.name,
             category_id=payload.category_id,
-            barcode=payload.barcode,
-            description=payload.description,
             price=payload.price,
-            cost_price=payload.cost_price,
+            original_price=payload.original_price,
+            description=payload.description,
             image_url=payload.image_url,
-            status=payload.status,
-            sort_order=payload.sort_order
+            barcode=payload.barcode,
+            brand=payload.brand,
+            unit=payload.unit,
+            status=payload.status
         )
 
         db.add(product)
@@ -60,13 +60,16 @@ class ProductService:
             "id": product.id,
             "name": product.name,
             "category_id": product.category_id,
-            "barcode": product.barcode,
-            "description": product.description,
             "price": product.price,
-            "cost_price": product.cost_price,
+            "original_price": product.original_price,
+            "description": product.description,
             "image_url": product.image_url,
+            "barcode": product.barcode,
+            "brand": product.brand,
+            "unit": product.unit,
             "status": product.status,
-            "sort_order": product.sort_order,
+            "sales_count": product.sales_count,
+            "view_count": product.view_count,
             "created_at": product.created_at,
             "updated_at": product.updated_at
         }
@@ -83,7 +86,7 @@ class ProductService:
         Returns:
             商品列表（分页）
         """
-        query = db.query(Product).order_by(Product.sort_order.asc(), Product.id.asc())
+        query = db.query(Product).order_by(Product.id.asc())
         return sqlalchemy_paginate(query, params=params)
 
     @staticmethod
@@ -109,13 +112,16 @@ class ProductService:
             "id": product.id,
             "name": product.name,
             "category_id": product.category_id,
-            "barcode": product.barcode,
-            "description": product.description,
             "price": product.price,
-            "cost_price": product.cost_price,
+            "original_price": product.original_price,
+            "description": product.description,
             "image_url": product.image_url,
+            "barcode": product.barcode,
+            "brand": product.brand,
+            "unit": product.unit,
             "status": product.status,
-            "sort_order": product.sort_order,
+            "sales_count": product.sales_count,
+            "view_count": product.view_count,
             "created_at": product.created_at,
             "updated_at": product.updated_at
         }
@@ -169,13 +175,16 @@ class ProductService:
             "id": product.id,
             "name": product.name,
             "category_id": product.category_id,
-            "barcode": product.barcode,
-            "description": product.description,
             "price": product.price,
-            "cost_price": product.cost_price,
+            "original_price": product.original_price,
+            "description": product.description,
             "image_url": product.image_url,
+            "barcode": product.barcode,
+            "brand": product.brand,
+            "unit": product.unit,
             "status": product.status,
-            "sort_order": product.sort_order,
+            "sales_count": product.sales_count,
+            "view_count": product.view_count,
             "created_at": product.created_at,
             "updated_at": product.updated_at
         }

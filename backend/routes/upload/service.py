@@ -3,18 +3,20 @@
 
 import os
 import uuid
-from fastapi import UploadFile
+from fastapi import UploadFile, Request
 from datetime import datetime
+from config import settings
 
 
 class UploadService:
     @staticmethod
-    async def upload_image(file: UploadFile) -> dict:
+    async def upload_image(file: UploadFile, request: Request) -> dict:
         """
         上传图片
 
         Args:
             file: 上传的文件
+            request: 请求对象
 
         Returns:
             上传后的文件信息
@@ -33,8 +35,11 @@ class UploadService:
             content = await file.read()
             buffer.write(content)
 
-        # 返回文件URL
+        # 获取基础URL
+        base_url = str(request.base_url).rstrip('/')
+        
+        # 返回完整的文件URL
         return {
-            'url': f"/uploads/images/{unique_filename}",
+            'url': f"{base_url}/uploads/images/{unique_filename}",
             'filename': unique_filename
         }

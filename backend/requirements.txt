@@ -8,3 +8,4 @@ pyjwt
 sqlalchemy
 pymysql
 cryptography
+python-multipart
