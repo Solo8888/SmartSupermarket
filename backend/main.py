@@ -1,10 +1,11 @@
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 from config import settings
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi_pagination import add_pagination
 from core.exceptions import BusinessException, business_exception_handler, general_exception_handler
-from routes import auth_router, category_router, product_router
+from routes import auth_router, category_router, product_router, upload_router
 
 # 创建FastAPI应用实例
 app = FastAPI(
@@ -38,6 +39,12 @@ async def exception_handler(request, exc: Exception):
 app.include_router(auth_router)
 app.include_router(category_router)
 app.include_router(product_router)
+app.include_router(upload_router)
+
+# 挂载静态文件目录
+import os
+os.makedirs('uploads/images', exist_ok=True)
+app.mount('/uploads', StaticFiles(directory='uploads'), name='uploads')
 
 add_pagination(app)
 
