@@ -7,6 +7,8 @@ from models.product import Product
 from models.category import Category
 from .schemas import ProductCreate
 from core.exceptions import NotFoundError
+from fastapi_pagination import Page, Params
+from fastapi_pagination.ext.sqlalchemy import paginate as sqlalchemy_paginate
 
 
 class ProductService:
@@ -67,4 +69,19 @@ class ProductService:
             "created_at": product.created_at,
             "updated_at": product.updated_at
         }
+
+    @staticmethod
+    def get_products(db: Session, params: Params) -> Page[Product]:
+        """
+        获取商品列表
+
+        Args:
+            db: 数据库会话
+            params: 分页参数
+
+        Returns:
+            商品列表（分页）
+        """
+        query = db.query(Product).order_by(Product.sort_order.asc(), Product.id.asc())
+        return sqlalchemy_paginate(query, params=params)
 

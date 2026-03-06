@@ -8,6 +8,7 @@ from models import get_db, User
 from core.permitions import require_role
 from .schemas import ProductCreate, ProductResponse
 from .service import ProductService
+from fastapi_pagination import Page, Params
 
 product_router = APIRouter(prefix='/products', tags=['products'])
 
@@ -31,4 +32,22 @@ async def create_product(
     """
     product = ProductService.create_product(db, payload, user)
     return ProductResponse(**product)
+
+
+@product_router.get('/', response_model=Page[ProductResponse])
+async def get_products(
+        params: Params = Depends(),
+        db: Session = Depends(get_db)
+):
+    """
+    获取商品列表接口
+
+    Args:
+        params: 分页参数
+        db: 数据库会话
+
+    Returns:
+        商品列表（分页）
+    """
+    return ProductService.get_products(db, params)
 
