@@ -21,13 +21,14 @@ const imageFile = ref(null)
 const formData = ref({
   name: '',
   category_id: null,
-  barcode: '',
-  description: '',
   price: 0,
-  cost_price: 0,
+  original_price: null,
+  description: '',
   image_url: '',
-  status: 'active',
-  sort_order: 0
+  barcode: '',
+  brand: '',
+  unit: '个',
+  status: 'active'
 })
 
 const fetchProducts = async () => {
@@ -60,13 +61,14 @@ const openCreateModal = () => {
   formData.value = {
     name: '',
     category_id: null,
-    barcode: '',
-    description: '',
     price: 0,
-    cost_price: 0,
+    original_price: null,
+    description: '',
     image_url: '',
-    status: 'active',
-    sort_order: 0
+    barcode: '',
+    brand: '',
+    unit: '个',
+    status: 'active'
   }
   showModal.value = true
 }
@@ -79,13 +81,14 @@ const openEditModal = (product) => {
   formData.value = {
     name: product.name,
     category_id: product.category_id,
-    barcode: product.barcode || '',
-    description: product.description || '',
     price: product.price,
-    cost_price: product.cost_price || 0,
+    original_price: product.original_price || null,
+    description: product.description || '',
     image_url: product.image_url || '',
-    status: product.status,
-    sort_order: product.sort_order
+    barcode: product.barcode || '',
+    brand: product.brand || '',
+    unit: product.unit || '个',
+    status: product.status
   }
   showModal.value = true
 }
@@ -126,6 +129,10 @@ const clearImage = () => {
 
 const handleSubmit = async () => {
   try {
+    if (imageFile.value && !formData.value.image_url) {
+      await handleImageUpload()
+    }
+    
     if (isEdit.value) {
       await productApi.updateProduct(currentProduct.value.id, formData.value)
     } else {
@@ -203,10 +210,12 @@ onMounted(() => {
                   <th>商品名称</th>
                   <th>分类</th>
                   <th>条码</th>
-                  <th>价格</th>
-                  <th>成本价</th>
+                  <th>品牌</th>
+                  <th>单位</th>
+                  <th>售价</th>
+                  <th>原价</th>
+                  <th>销量</th>
                   <th>状态</th>
-                  <th>排序</th>
                   <th>操作</th>
                 </tr>
               </thead>
@@ -221,14 +230,16 @@ onMounted(() => {
                   <td class="product-name">{{ product.name }}</td>
                   <td>{{ getCategoryName(product.category_id) }}</td>
                   <td>{{ product.barcode || '-' }}</td>
+                  <td>{{ product.brand || '-' }}</td>
+                  <td>{{ product.unit || '-' }}</td>
                   <td>¥{{ product.price }}</td>
-                  <td>{{ product.cost_price ? '¥' + product.cost_price : '-' }}</td>
+                  <td>{{ product.original_price ? '¥' + product.original_price : '-' }}</td>
+                  <td>{{ product.sales_count || 0 }}</td>
                   <td>
                     <span class="status-badge" :class="product.status">
                       {{ getStatusText(product.status) }}
                     </span>
                   </td>
-                  <td>{{ product.sort_order }}</td>
                   <td>
                     <div class="actions">
                       <button class="btn-sm btn-secondary" @click="openEditModal(product)">
@@ -287,7 +298,7 @@ onMounted(() => {
           
           <div class="form-row">
             <div class="form-group">
-              <label>分类</label>
+              <label>分类 *</label>
               <CategoryCascader 
                 v-model="formData.category_id" 
                 :categories="categories"
@@ -295,8 +306,8 @@ onMounted(() => {
               />
             </div>
             <div class="form-group">
-              <label>排序</label>
-              <input v-model.number="formData.sort_order" type="number" placeholder="数字越小越靠前" />
+              <label>品牌</label>
+              <input v-model="formData.brand" type="text" placeholder="请输入品牌" />
             </div>
           </div>
           
@@ -306,18 +317,24 @@ onMounted(() => {
               <input v-model.number="formData.price" type="number" step="0.01" placeholder="请输入售价" />
             </div>
             <div class="form-group">
-              <label>成本价</label>
-              <input v-model.number="formData.cost_price" type="number" step="0.01" placeholder="请输入成本价" />
+              <label>原价</label>
+              <input v-model.number="formData.original_price" type="number" step="0.01" placeholder="请输入原价" />
             </div>
           </div>
           
-          <div class="form-group">
-            <label>状态</label>
-            <select v-model="formData.status">
-              <option value="active">启用</option>
-              <option value="inactive">禁用</option>
-              <option value="out_of_stock">缺货</option>
-            </select>
+          <div class="form-row">
+            <div class="form-group">
+              <label>单位</label>
+              <input v-model="formData.unit" type="text" placeholder="请输入单位" />
+            </div>
+            <div class="form-group">
+              <label>状态</label>
+              <select v-model="formData.status">
+                <option value="active">启用</option>
+                <option value="inactive">禁用</option>
+                <option value="out_of_stock">缺货</option>
+              </select>
+            </div>
           </div>
           
           <div class="form-group">
@@ -339,15 +356,9 @@ onMounted(() => {
                   选择图片
                 </button>
               </div>
-              <div v-if="imageFile && !formData.image_url" class="upload-btn-wrapper">
-                <button 
-                  type="button" 
-                  class="btn btn-primary" 
-                  :disabled="uploading"
-                  @click="handleImageUpload"
-                >
-                  {{ uploading ? '上传中...' : '上传图片' }}
-                </button>
+              <div v-if="imageFile && !formData.image_url" class="upload-status">
+                <span v-if="uploading" class="uploading-text">上传中...</span>
+                <span v-else class="upload-hint">已选择图片，点击创建/保存时自动上传</span>
               </div>
             </div>
           </div>
@@ -698,9 +709,18 @@ onMounted(() => {
   background: #f9fafb;
 }
 
-.upload-btn-wrapper {
-  display: flex;
-  gap: 12px;
+.upload-status {
+  margin-top: 8px;
+  font-size: 14px;
+}
+
+.uploading-text {
+  color: #3b82f6;
+  font-weight: 500;
+}
+
+.upload-hint {
+  color: #6b7280;
 }
 
 .modal-footer {
