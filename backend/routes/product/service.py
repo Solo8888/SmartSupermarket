@@ -3,9 +3,10 @@
 # 处理商品相关的业务逻辑
 
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from models.product import Product
 from models.category import Category
-from .schemas import ProductCreate
+from .schemas import ProductCreate, ProductUpdate
 from core.exceptions import NotFoundError
 from fastapi_pagination import Page, Params
 from fastapi_pagination.ext.sqlalchemy import paginate as sqlalchemy_paginate
@@ -103,6 +104,66 @@ class ProductService:
         product = db.query(Product).filter(Product.id == product_id).first()
         if not product:
             raise NotFoundError("商品不存在")
+
+        return {
+            "id": product.id,
+            "name": product.name,
+            "category_id": product.category_id,
+            "barcode": product.barcode,
+            "description": product.description,
+            "price": product.price,
+            "cost_price": product.cost_price,
+            "image_url": product.image_url,
+            "status": product.status,
+            "sort_order": product.sort_order,
+            "created_at": product.created_at,
+            "updated_at": product.updated_at
+        }
+
+    @staticmethod
+    def update_product(db: Session, product_id: int, payload: ProductUpdate, user) -> dict:
+        """
+        更新商品
+
+        Args:
+            db: 数据库会话
+            product_id: 商品ID
+            payload: 更新商品请求体
+            user: 当前用户
+
+        Returns:
+            更新成功的商品信息
+
+        Raises:
+            NotFoundError: 商品不存在
+        """
+        # 获取商品
+        product = db.query(Product).filter(Product.id == product_id).first()
+        if not product:
+            raise NotFoundError("商品不存在")
+
+        # 检查分类是否存在（如果提供了category_id）
+        if payload.category_id is not None:
+            category = db.query(Category).filter(Category.id == payload.category_id).first()
+            if not category:
+                raise ValueError("分类不存在")
+
+        # 检查条码是否已存在（如果提供了barcode且不是当前商品的barcode）
+        if payload.barcode is not None:
+            existing_product = db.query(Product).filter(Product.barcode == payload.barcode).filter(Product.id != product_id).first()
+            if existing_product:
+                raise ValueError("商品条码已存在")
+
+        # 更新字段（只更新提供的字段）
+        update_data = payload.model_dump(exclude_unset=True)
+        for field, value in update_data.items():
+            setattr(product, field, value)
+
+        # 更新时间戳
+        product.updated_at = func.current_timestamp()
+
+        db.commit()
+        db.refresh(product)
 
         return {
             "id": product.id,
