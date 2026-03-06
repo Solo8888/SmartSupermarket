@@ -1,13 +1,22 @@
 <script setup>
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../stores/user'
+import { computed } from 'vue'
 
 const router = useRouter()
 const userStore = useUserStore()
 
+const isInventoryManager = computed(() => {
+  return userStore.userInfo?.role === 'inventory_manager'
+})
+
 const handleLogout = () => {
   userStore.logout()
   router.push('/login')
+}
+
+const goToAdmin = () => {
+  router.push('/admin/categories')
 }
 </script>
 
@@ -30,6 +39,13 @@ const handleLogout = () => {
         <div class="user-details">
           <p><strong>用户ID:</strong> {{ userStore.userInfo?.user_id }}</p>
           <p><strong>手机号:</strong> {{ userStore.userInfo?.phone }}</p>
+          <p><strong>角色:</strong> {{ userStore.userInfo?.role === 'inventory_manager' ? '库存管理员' : '顾客' }}</p>
+        </div>
+        
+        <div v-if="isInventoryManager" class="admin-section">
+          <button class="btn-admin" @click="goToAdmin">
+            进入管理后台
+          </button>
         </div>
       </div>
     </main>
@@ -129,6 +145,28 @@ const handleLogout = () => {
   margin: 12px 0;
 }
 
+.admin-section {
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.btn-admin {
+  padding: 14px 32px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.3s;
+}
+
+.btn-admin:hover {
+  opacity: 0.9;
+}
+
 @media (max-width: 768px) {
   .header-content {
     flex-direction: column;
@@ -177,6 +215,16 @@ const handleLogout = () => {
   .user-details p {
     font-size: 15px;
   }
+  
+  .admin-section {
+    margin-top: 24px;
+    padding-top: 20px;
+  }
+  
+  .btn-admin {
+    padding: 12px 24px;
+    font-size: 15px;
+  }
 }
 
 @media (max-width: 480px) {
@@ -214,6 +262,16 @@ const handleLogout = () => {
   .user-details p {
     font-size: 14px;
     margin: 10px 0;
+  }
+  
+  .admin-section {
+    margin-top: 20px;
+    padding-top: 16px;
+  }
+  
+  .btn-admin {
+    padding: 10px 20px;
+    font-size: 14px;
   }
 }
 </style>

@@ -21,8 +21,12 @@ const handleLogin = async () => {
   error.value = ''
   
   try {
-    await userStore.login(phone.value, password.value)
-    router.push('/home')
+    const response = await userStore.login(phone.value, password.value)
+    if (response.role === 'inventory_manager') {
+      router.push('/admin/categories')
+    } else {
+      router.push('/home')
+    }
   } catch (err) {
     error.value = err.response?.data?.detail || '登录失败，请检查手机号和密码'
   } finally {

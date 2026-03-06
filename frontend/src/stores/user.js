@@ -13,7 +13,8 @@ export const useUserStore = defineStore('user', () => {
     userInfo.value = {
       user_id: response.user_id,
       phone: response.phone,
-      name: response.name
+      name: response.name,
+      role: response.role
     }
     isAuthenticated.value = true
     

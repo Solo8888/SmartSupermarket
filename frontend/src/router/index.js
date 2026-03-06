@@ -21,6 +21,23 @@ const routes = [
     name: 'Home',
     component: () => import('../views/Home.vue'),
     meta: { requiresAuth: true }
+  },
+  {
+    path: '/admin',
+    component: () => import('../layouts/AdminLayout.vue'),
+    meta: { requiresAuth: true, requiresRole: 'inventory_manager' },
+    children: [
+      {
+        path: '',
+        redirect: '/admin/categories'
+      },
+      {
+        path: 'categories',
+        name: 'Categories',
+        component: () => import('../views/admin/Categories.vue'),
+        meta: { title: '商品分类管理' }
+      }
+    ]
   }
 ]
 
@@ -34,8 +51,16 @@ router.beforeEach((to, from, next) => {
   
   if (to.meta.requiresAuth && !userStore.isAuthenticated) {
     next('/login')
-  } else if ((to.path === '/login' || to.path === '/register') && userStore.isAuthenticated) {
+  } else if (to.meta.requiresRole && userStore.userInfo?.role !== to.meta.requiresRole) {
     next('/home')
+  } else if ((to.path === '/login' || to.path === '/register') && userStore.isAuthenticated) {
+    if (userStore.userInfo?.role === 'inventory_manager') {
+      next('/admin/categories')
+    } else {
+      next('/home')
+    }
+  } else if (to.path === '/home' && userStore.userInfo?.role === 'inventory_manager') {
+    next('/admin/categories')
   } else {
     next()
   }
