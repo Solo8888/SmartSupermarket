@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     debug: bool = Field(default=False, alias='DEBUG')
     
     # JWT配置
-    jwt_secret_key: str = Field(default='your_jwt_secret_key', alias='JWT_SECRET_KEY')
+    jwt_secret_key: str = Field(default='smart_supermarket_jwt_secret_key_2025_secure_random_key', alias='JWT_SECRET_KEY')
     jwt_algorithm: str = Field(default='HS256', alias='JWT_ALGORITHM')
     jwt_expires_minutes: int = Field(default=1440, alias='JWT_EXPIRES_MINUTES')
     
