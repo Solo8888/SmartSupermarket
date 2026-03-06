@@ -93,3 +93,20 @@ async def update_product(
     product = ProductService.update_product(db, product_id, payload, user)
     return ProductResponse(**product)
 
+
+@product_router.delete('/{product_id}', status_code=204)
+async def delete_product(
+        product_id: int,
+        user: User = Depends(require_role('inventory_manager')),
+        db: Session = Depends(get_db)
+):
+    """
+    删除商品接口
+
+    Args:
+        product_id: 商品ID
+        user: 当前用户
+        db: 数据库会话
+    """
+    ProductService.delete_product(db, product_id, user)
+

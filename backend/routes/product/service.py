@@ -180,3 +180,25 @@ class ProductService:
             "updated_at": product.updated_at
         }
 
+    @staticmethod
+    def delete_product(db: Session, product_id: int, user) -> None:
+        """
+        删除商品
+
+        Args:
+            db: 数据库会话
+            product_id: 商品ID
+            user: 当前用户
+
+        Raises:
+            NotFoundError: 商品不存在
+        """
+        # 获取商品
+        product = db.query(Product).filter(Product.id == product_id).first()
+        if not product:
+            raise NotFoundError("商品不存在")
+
+        # 删除商品
+        db.delete(product)
+        db.commit()
+
