@@ -4,7 +4,7 @@ from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi_pagination import add_pagination
 from core.exceptions import BusinessException, business_exception_handler, general_exception_handler
-from routes import auth_router, category_router
+from routes import auth_router, category_router, product_router
 
 # 创建FastAPI应用实例
 app = FastAPI(
@@ -37,6 +37,7 @@ async def exception_handler(request, exc: Exception):
 # 注册路由
 app.include_router(auth_router)
 app.include_router(category_router)
+app.include_router(product_router)
 
 add_pagination(app)
 
