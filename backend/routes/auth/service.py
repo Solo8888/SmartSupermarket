@@ -111,3 +111,38 @@ class AuthService:
         except Exception as e:
             db.rollback()
             raise ServerError(f"注册失败: {str(e)}")
+
+    def change_password(self, db: Session, user_id: int, old_password: str, new_password: str) -> dict:
+        """
+        修改用户密码
+
+        Args:
+            db: 数据库会话
+            user_id: 用户ID
+            old_password: 旧密码
+            new_password: 新密码
+
+        Returns:
+            修改成功后的响应
+        """
+        try:
+            user = db.query(User).filter(User.id == user_id).first()
+            if not user:
+                raise NotFoundError("用户不存在")
+            
+            if not self.verify_password(old_password, user.password):
+                raise NotFoundError("旧密码错误")
+            
+            hashed_password = self.get_password_hash(new_password)
+            user.password = hashed_password
+            user.updated_at = func.current_timestamp()
+            db.commit()
+            
+            return {
+                'message': '密码修改成功'
+            }
+        except NotFoundError:
+            raise
+        except Exception as e:
+            db.rollback()
+            raise ServerError(f"修改密码失败: {str(e)}")

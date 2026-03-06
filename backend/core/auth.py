@@ -4,6 +4,8 @@ from datetime import datetime, timedelta, timezone
 from pydantic_settings import BaseSettings
 import jwt
 from typing import Optional
+from fastapi import Depends
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 from config import settings
 from core.exceptions import UnauthorizedError
@@ -65,3 +67,21 @@ class JWTHandler:
             raise UnauthorizedError("令牌已过期")
         except jwt.InvalidTokenError:
             raise UnauthorizedError("令牌无效")
+
+
+security = HTTPBearer()
+
+
+def get_current_user_id(credentials: HTTPAuthorizationCredentials = Depends(security)) -> int:
+    """
+    获取当前用户ID的依赖项
+
+    Args:
+        credentials: HTTP认证凭据
+
+    Returns:
+        当前用户的ID
+    """
+    token = credentials.credentials
+    user_id = JWTHandler.verify_token(token)
+    return int(user_id)

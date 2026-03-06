@@ -31,3 +31,12 @@ class RegisterResponse(BaseModel):
     phone: str
     role: str
     message: str = '注册成功'
+
+
+class ChangePasswordRequest(BaseModel):
+    old_password: str
+    new_password: str
+
+
+class ChangePasswordResponse(BaseModel):
+    message: str = '密码修改成功'
