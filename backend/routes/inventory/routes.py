@@ -73,3 +73,26 @@ async def update_inventory(
     inventory = InventoryService.update_inventory(db, product_id, payload, user)
     return InventoryResponse(**inventory)
 
+
+@inventory_router.post('/stock-in/{product_id}', response_model=InventoryResponse)
+async def stock_in(
+        product_id: int,
+        payload: StockInRequest,
+        user: User = Depends(require_role('inventory_manager')),
+        db: Session = Depends(get_db)
+):
+    """
+    入库登记接口
+
+    Args:
+        product_id: 商品ID
+        payload: 入库请求体
+        user: 当前用户
+        db: 数据库会话
+
+    Returns:
+        更新后的库存信息
+    """
+    inventory = InventoryService.stock_in(db, product_id, payload, user)
+    return InventoryResponse(**inventory)
+
