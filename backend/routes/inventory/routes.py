@@ -50,3 +50,26 @@ async def get_inventory(
     inventory = InventoryService.get_inventory(db, product_id)
     return InventoryResponse(**inventory)
 
+
+@inventory_router.put('/{product_id}', response_model=InventoryResponse)
+async def update_inventory(
+        product_id: int,
+        payload: InventoryUpdate,
+        user: User = Depends(require_role('inventory_manager')),
+        db: Session = Depends(get_db)
+):
+    """
+    更新库存接口
+
+    Args:
+        product_id: 商品ID
+        payload: 更新库存请求体
+        user: 当前用户
+        db: 数据库会话
+
+    Returns:
+        更新成功的库存信息
+    """
+    inventory = InventoryService.update_inventory(db, product_id, payload, user)
+    return InventoryResponse(**inventory)
+
