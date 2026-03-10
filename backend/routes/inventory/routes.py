@@ -96,3 +96,26 @@ async def stock_in(
     inventory = InventoryService.stock_in(db, product_id, payload, user)
     return InventoryResponse(**inventory)
 
+
+@inventory_router.post('/stock-out/{product_id}', response_model=InventoryResponse)
+async def stock_out(
+        product_id: int,
+        payload: StockOutRequest,
+        user: User = Depends(require_role('inventory_manager')),
+        db: Session = Depends(get_db)
+):
+    """
+    出库审核接口
+
+    Args:
+        product_id: 商品ID
+        payload: 出库请求体
+        user: 当前用户
+        db: 数据库会话
+
+    Returns:
+        更新后的库存信息
+    """
+    inventory = InventoryService.stock_out(db, product_id, payload, user)
+    return InventoryResponse(**inventory)
+
