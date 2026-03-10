@@ -88,6 +88,39 @@ class ProductService:
         """
         query = db.query(Product).order_by(Product.id.asc())
         return sqlalchemy_paginate(query, params=params)
+    
+    @staticmethod
+    def get_all_products(db: Session) -> list:
+        """
+        获取所有商品（不分页）
+
+        Args:
+            db: 数据库会话
+
+        Returns:
+            所有商品列表
+        """
+        products = db.query(Product).order_by(Product.id.asc()).all()
+        return [
+            {
+                "id": product.id,
+                "name": product.name,
+                "category_id": product.category_id,
+                "price": product.price,
+                "original_price": product.original_price,
+                "description": product.description,
+                "image_url": product.image_url,
+                "barcode": product.barcode,
+                "brand": product.brand,
+                "unit": product.unit,
+                "status": product.status,
+                "sales_count": product.sales_count,
+                "view_count": product.view_count,
+                "created_at": product.created_at,
+                "updated_at": product.updated_at
+            }
+            for product in products
+        ]
 
     @staticmethod
     def get_product(db: Session, product_id: int) -> dict:

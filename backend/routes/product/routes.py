@@ -52,6 +52,22 @@ async def get_products(
     return ProductService.get_products(db, params)
 
 
+@product_router.get('/all')
+async def get_all_products(
+        db: Session = Depends(get_db)
+):
+    """
+    获取所有商品接口（不分页）
+
+    Args:
+        db: 数据库会话
+
+    Returns:
+        所有商品列表
+    """
+    return ProductService.get_all_products(db)
+
+
 @product_router.get('/{product_id}', response_model=ProductResponse)
 async def get_product(
         product_id: int,
