@@ -31,3 +31,22 @@ async def get_inventories(
     """
     return InventoryService.get_inventories(db, params)
 
+
+@inventory_router.get('/{product_id}', response_model=InventoryResponse)
+async def get_inventory(
+        product_id: int,
+        db: Session = Depends(get_db)
+):
+    """
+    获取单个商品库存接口
+
+    Args:
+        product_id: 商品ID
+        db: 数据库会话
+
+    Returns:
+        商品库存信息
+    """
+    inventory = InventoryService.get_inventory(db, product_id)
+    return InventoryResponse(**inventory)
+
