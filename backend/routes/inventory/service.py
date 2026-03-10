@@ -15,18 +15,28 @@ from fastapi_pagination.ext.sqlalchemy import paginate as sqlalchemy_paginate
 
 class InventoryService:
     @staticmethod
-    def get_inventories(db: Session, params: Params) -> Page[Inventory]:
+    def get_inventories(db: Session, params: Params, search: str = None) -> Page[Inventory]:
         """
         获取库存列表
 
         Args:
             db: 数据库会话
             params: 分页参数
+            search: 搜索关键词（可选）
 
         Returns:
             库存列表（分页）
         """
         query = db.query(Inventory).order_by(Inventory.id.asc())
+        
+        if search:
+            search_term = f"%{search}%"
+            query = query.join(Product, Inventory.product_id == Product.id).filter(
+                (Product.name.like(search_term)) |
+                (Product.brand.like(search_term)) |
+                (Product.barcode.like(search_term))
+            )
+        
         return sqlalchemy_paginate(query, params=params)
 
     @staticmethod

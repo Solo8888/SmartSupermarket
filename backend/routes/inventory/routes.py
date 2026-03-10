@@ -17,6 +17,7 @@ inventory_router = APIRouter(prefix='/inventory', tags=['inventory'])
 @inventory_router.get('/', response_model=Page[InventoryResponse])
 async def get_inventories(
         params: Params = Depends(),
+        search: str = None,
         db: Session = Depends(get_db)
 ):
     """
@@ -24,12 +25,13 @@ async def get_inventories(
 
     Args:
         params: 分页参数
+        search: 搜索关键词（可选），支持搜索商品名称、品牌、条码
         db: 数据库会话
 
     Returns:
         库存列表（分页）
     """
-    return InventoryService.get_inventories(db, params)
+    return InventoryService.get_inventories(db, params, search)
 
 
 @inventory_router.get('/{product_id}', response_model=InventoryResponse)

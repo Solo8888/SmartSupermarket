@@ -75,18 +75,28 @@ class ProductService:
         }
 
     @staticmethod
-    def get_products(db: Session, params: Params) -> Page[Product]:
+    def get_products(db: Session, params: Params, search: str = None) -> Page[Product]:
         """
         获取商品列表
 
         Args:
             db: 数据库会话
             params: 分页参数
+            search: 搜索关键词（可选）
 
         Returns:
             商品列表（分页）
         """
         query = db.query(Product).order_by(Product.id.asc())
+        
+        if search:
+            search_term = f"%{search}%"
+            query = query.filter(
+                (Product.name.like(search_term)) |
+                (Product.brand.like(search_term)) |
+                (Product.barcode.like(search_term))
+            )
+        
         return sqlalchemy_paginate(query, params=params)
     
     @staticmethod

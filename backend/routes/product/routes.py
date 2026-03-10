@@ -37,6 +37,7 @@ async def create_product(
 @product_router.get('/', response_model=Page[ProductResponse])
 async def get_products(
         params: Params = Depends(),
+        search: str = None,
         db: Session = Depends(get_db)
 ):
     """
@@ -44,12 +45,13 @@ async def get_products(
 
     Args:
         params: 分页参数
+        search: 搜索关键词（可选），支持搜索商品名称、品牌、条码
         db: 数据库会话
 
     Returns:
         商品列表（分页）
     """
-    return ProductService.get_products(db, params)
+    return ProductService.get_products(db, params, search)
 
 
 @product_router.get('/all')
