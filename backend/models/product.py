@@ -1,6 +1,8 @@
 # 商品模型
 # 定义商品相关的数据库模型
+import uuid
 from sqlalchemy import Column, Integer, String, Text, DECIMAL, Enum, ForeignKey, DateTime
+from sqlalchemy.dialects.mysql import CHAR
 from sqlalchemy.sql import func
 from . import Base
 
@@ -8,9 +10,9 @@ from . import Base
 class Product(Base):
     __tablename__ = "products"
 
-    id = Column(Integer, primary_key=True, autoincrement=True, comment='商品ID')
+    id = Column(CHAR(36), primary_key=True, default=lambda: str(uuid.uuid4()), comment='商品ID')
     name = Column(String(100), nullable=False, comment='商品名称')
-    category_id = Column(Integer, ForeignKey('categories.id', ondelete='CASCADE'), nullable=False, comment='分类ID')
+    category_id = Column(CHAR(36), ForeignKey('categories.id', ondelete='CASCADE'), nullable=False, comment='分类ID')
     price = Column(DECIMAL(10, 2), nullable=False, comment='商品价格')
     original_price = Column(DECIMAL(10, 2), nullable=True, comment='原价')
     description = Column(Text, nullable=True, comment='商品描述')

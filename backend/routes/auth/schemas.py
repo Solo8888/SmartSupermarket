@@ -13,7 +13,7 @@ class LoginRequest(BaseModel):
 class LoginResponse(BaseModel):
     access_token: str
     token_type: str = 'bearer'
-    user_id: int
+    user_id: str
     phone: str
     name: Optional[str] = None
     role: Optional[str] = None
@@ -27,7 +27,7 @@ class RegisterRequest(BaseModel):
 
 
 class RegisterResponse(BaseModel):
-    user_id: int
+    user_id: str
     username: str
     phone: str
     role: str

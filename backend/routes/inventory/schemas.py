@@ -28,8 +28,8 @@ class StockOutRequest(BaseModel):
 
 class InventoryResponse(BaseModel):
     """库存响应"""
-    id: int
-    product_id: int
+    id: str
+    product_id: str
     warehouse_id: int
     stock_quantity: int
     warning_quantity: int

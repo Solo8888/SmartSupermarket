@@ -1,7 +1,9 @@
 
 # 库存模型
 # 定义库存相关的数据库模型
+import uuid
 from sqlalchemy import Column, Integer, ForeignKey, DateTime
+from sqlalchemy.dialects.mysql import CHAR
 from sqlalchemy.sql import func
 from . import Base
 
@@ -9,8 +11,8 @@ from . import Base
 class Inventory(Base):
     __tablename__ = "inventory"
 
-    id = Column(Integer, primary_key=True, autoincrement=True, comment='库存ID')
-    product_id = Column(Integer, ForeignKey('products.id', ondelete='CASCADE'), nullable=False, unique=True, comment='商品ID')
+    id = Column(CHAR(36), primary_key=True, default=lambda: str(uuid.uuid4()), comment='库存ID')
+    product_id = Column(CHAR(36), ForeignKey('products.id', ondelete='CASCADE'), nullable=False, unique=True, comment='商品ID')
     warehouse_id = Column(Integer, nullable=False, default=1, comment='仓库ID')
     stock_quantity = Column(Integer, nullable=False, default=0, comment='库存数量')
     warning_quantity = Column(Integer, nullable=False, default=10, comment='预警数量')

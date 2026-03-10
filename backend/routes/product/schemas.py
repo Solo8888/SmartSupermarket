@@ -11,7 +11,7 @@ from decimal import Decimal
 class ProductCreate(BaseModel):
     """创建商品请求"""
     name: str = Field(..., description="商品名称", max_length=100)
-    category_id: int = Field(..., description="分类ID")
+    category_id: str = Field(..., description="分类ID")
     price: Decimal = Field(..., description="商品价格", ge=0)
     original_price: Optional[Decimal] = Field(None, description="原价", ge=0)
     description: Optional[str] = Field(None, description="商品描述")
@@ -25,7 +25,7 @@ class ProductCreate(BaseModel):
 class ProductUpdate(BaseModel):
     """更新商品请求"""
     name: Optional[str] = Field(None, description="商品名称", max_length=100)
-    category_id: Optional[int] = Field(None, description="分类ID")
+    category_id: Optional[str] = Field(None, description="分类ID")
     price: Optional[Decimal] = Field(None, description="商品价格", ge=0)
     original_price: Optional[Decimal] = Field(None, description="原价", ge=0)
     description: Optional[str] = Field(None, description="商品描述")
@@ -38,9 +38,9 @@ class ProductUpdate(BaseModel):
 
 class ProductResponse(BaseModel):
     """商品响应"""
-    id: int
+    id: str
     name: str
-    category_id: int
+    category_id: str
     price: Decimal
     original_price: Optional[Decimal] = None
     description: Optional[str] = None

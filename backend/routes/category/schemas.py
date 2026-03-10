@@ -9,7 +9,7 @@ from datetime import datetime
 class CategoryCreate(BaseModel):
     """创建商品类别请求"""
     name: str = Field(..., description="分类名称", max_length=50)
-    parent_id: Optional[int] = Field(None, description="父分类ID")
+    parent_id: Optional[str] = Field(None, description="父分类ID")
     description: Optional[str] = Field(None, description="分类描述")
     level: int = Field(1, description="分类级别", ge=1)
     sort_order: int = Field(0, description="排序顺序", ge=0)
@@ -19,7 +19,7 @@ class CategoryCreate(BaseModel):
 class CategoryUpdate(BaseModel):
     """更新商品类别请求"""
     name: Optional[str] = Field(None, description="分类名称", max_length=50)
-    parent_id: Optional[int] = Field(None, description="父分类ID")
+    parent_id: Optional[str] = Field(None, description="父分类ID")
     description: Optional[str] = Field(None, description="分类描述")
     level: Optional[int] = Field(None, description="分类级别", ge=1)
     sort_order: Optional[int] = Field(None, description="排序顺序", ge=0)
@@ -28,9 +28,9 @@ class CategoryUpdate(BaseModel):
 
 class CategoryResponse(BaseModel):
     """商品类别响应"""
-    id: int
+    id: str
     name: str
-    parent_id: Optional[int] = None
+    parent_id: Optional[str] = None
     description: Optional[str] = None
     level: int
     sort_order: int
