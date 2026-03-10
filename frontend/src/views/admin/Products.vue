@@ -17,6 +17,7 @@ const size = ref(10)
 const total = ref(0)
 const imagePreview = ref('')
 const imageFile = ref(null)
+const searchQuery = ref('')
 
 const formData = ref({
   name: '',
@@ -34,7 +35,11 @@ const formData = ref({
 const fetchProducts = async () => {
   loading.value = true
   try {
-    const response = await productApi.getProducts({ page: page.value, size: size.value })
+    const params = { page: page.value, size: size.value }
+    if (searchQuery.value) {
+      params.search = searchQuery.value
+    }
+    const response = await productApi.getProducts(params)
     products.value = response.items || []
     total.value = response.total || 0
   } catch (err) {
@@ -42,6 +47,17 @@ const fetchProducts = async () => {
   } finally {
     loading.value = false
   }
+}
+
+const handleSearch = () => {
+  page.value = 1
+  fetchProducts()
+}
+
+const clearSearch = () => {
+  searchQuery.value = ''
+  page.value = 1
+  fetchProducts()
 }
 
 const fetchCategories = async () => {
@@ -189,6 +205,16 @@ onMounted(() => {
         <h3>商品管理</h3>
       </div>
       <div class="header-right">
+        <div class="search-box">
+          <input 
+            v-model="searchQuery" 
+            type="text" 
+            placeholder="搜索商品名称、品牌、条码" 
+            @keyup.enter="handleSearch"
+          />
+          <button v-if="searchQuery" class="clear-search-btn" @click="clearSearch">×</button>
+          <button class="btn btn-secondary search-btn" @click="handleSearch">搜索</button>
+        </div>
         <button class="btn btn-primary" @click="openCreateModal()">
           + 添加商品
         </button>
@@ -391,6 +417,54 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
+}
+
+.header-right {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.search-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+}
+
+.search-box input {
+  padding: 10px 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  width: 280px;
+  padding-right: 40px;
+}
+
+.search-box input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.clear-search-btn {
+  position: absolute;
+  right: 90px;
+  background: none;
+  border: none;
+  font-size: 18px;
+  color: #9ca3af;
+  cursor: pointer;
+  padding: 0 8px;
+  line-height: 1;
+}
+
+.clear-search-btn:hover {
+  color: #6b7280;
+}
+
+.search-btn {
+  padding: 10px 16px;
 }
 
 .page-header h3 {
