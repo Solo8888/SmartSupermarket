@@ -18,6 +18,11 @@ const menuItems = [
     name: '商品管理',
     path: '/admin/products',
     icon: '📦'
+  },
+  {
+    name: '库存管理',
+    path: '/admin/inventory',
+    icon: '📊'
   }
 ]
 

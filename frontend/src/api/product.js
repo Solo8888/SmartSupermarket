@@ -5,6 +5,10 @@ export const productApi = {
     return request.get('/products', { params })
   },
 
+  getAllProducts() {
+    return request.get('/products/all')
+  },
+
   getProduct(id) {
     return request.get(`/products/${id}`)
   },
