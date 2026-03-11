@@ -48,6 +48,12 @@ const routes = [
         name: 'Inventory',
         component: () => import('../views/admin/Inventory.vue'),
         meta: { title: '库存管理' }
+      },
+      {
+        path: 'promotions',
+        name: 'Promotions',
+        component: () => import('../views/admin/Promotions.vue'),
+        meta: { title: '促销活动管理' }
       }
     ]
   }

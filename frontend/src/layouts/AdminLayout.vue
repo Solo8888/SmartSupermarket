@@ -23,6 +23,11 @@ const menuItems = [
     name: '库存管理',
     path: '/admin/inventory',
     icon: '📊'
+  },
+  {
+    name: '促销活动',
+    path: '/admin/promotions',
+    icon: '🎉'
   }
 ]
 
