@@ -4,6 +4,8 @@
 from sqlalchemy.orm import Session
 from models.promotion import Promotion
 from .schemas import PromotionCreate
+from fastapi_pagination import Page, Params
+from fastapi_pagination.ext.sqlalchemy import paginate as sqlalchemy_paginate
 from sqlalchemy import func
 
 
@@ -53,3 +55,18 @@ class PromotionService:
             "created_at": promotion.created_at,
             "updated_at": promotion.updated_at
         }
+
+    @staticmethod
+    def get_promotions(db: Session, params: Params) -> Page[Promotion]:
+        """
+        获取促销活动列表
+
+        Args:
+            db: 数据库会话
+            params: 分页参数
+
+        Returns:
+            促销活动列表（分页）
+        """
+        query = db.query(Promotion).order_by(Promotion.created_at.desc())
+        return sqlalchemy_paginate(query, params=params)

@@ -7,6 +7,7 @@ from models import get_db, User
 from core.permitions import require_role
 from .schemas import PromotionCreate, PromotionResponse
 from .service import PromotionService
+from fastapi_pagination import Page, Params
 
 promotion_router = APIRouter(prefix='/promotions', tags=['promotions'])
 
@@ -30,3 +31,21 @@ async def create_promotion(
     """
     promotion = PromotionService.create_promotion(db, payload, user)
     return PromotionResponse(**promotion)
+
+
+@promotion_router.get('/', response_model=Page[PromotionResponse])
+async def get_promotions(
+        params: Params = Depends(),
+        db: Session = Depends(get_db)
+):
+    """
+    获取促销活动列表接口（分页）
+
+    Args:
+        params: 分页参数
+        db: 数据库会话
+
+    Returns:
+        促销活动列表（分页）
+    """
+    return PromotionService.get_promotions(db, params)
