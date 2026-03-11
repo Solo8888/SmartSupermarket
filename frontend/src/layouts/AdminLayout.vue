@@ -8,28 +8,40 @@ const route = useRoute()
 const userStore = useUserStore()
 const sidebarCollapsed = ref(false)
 
-const menuItems = [
-  {
-    name: '商品分类',
-    path: '/admin/categories',
-    icon: '📂'
-  },
-  {
-    name: '商品管理',
-    path: '/admin/products',
-    icon: '📦'
-  },
-  {
-    name: '库存管理',
-    path: '/admin/inventory',
-    icon: '📊'
-  },
-  {
-    name: '促销活动',
-    path: '/admin/promotions',
-    icon: '🎉'
+const menuItems = computed(() => {
+  const role = userStore.userInfo?.role
+  const items = []
+  
+  if (role === 'inventory_manager') {
+    items.push(
+      {
+        name: '商品分类',
+        path: '/admin/categories',
+        icon: '📂'
+      },
+      {
+        name: '商品管理',
+        path: '/admin/products',
+        icon: '📦'
+      },
+      {
+        name: '库存管理',
+        path: '/admin/inventory',
+        icon: '📊'
+      }
+    )
+  } else if (role === 'operations_manager') {
+    items.push(
+      {
+        name: '促销活动',
+        path: '/admin/promotions',
+        icon: '🎉'
+      }
+    )
   }
-]
+  
+  return items
+})
 
 const handleLogout = () => {
   userStore.logout()

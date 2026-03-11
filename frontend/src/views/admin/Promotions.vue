@@ -15,7 +15,7 @@ const formData = ref({
   name: '',
   description: '',
   type: 'discount',
-  value: 0,
+  value: 0.1,
   start_time: '',
   end_time: '',
   status: 'draft'
@@ -42,7 +42,7 @@ const openCreateModal = () => {
     name: '',
     description: '',
     type: 'discount',
-    value: 0,
+    value: 0.1,
     start_time: '',
     end_time: '',
     status: 'draft'
@@ -73,10 +73,14 @@ const formatDateTime = (dateStr) => {
 
 const handleSubmit = async () => {
   try {
+    const payload = {
+      ...formData.value,
+      value: parseFloat(formData.value.value)
+    }
     if (isEdit.value) {
-      await promotionApi.updatePromotion(currentPromotion.value.id, formData.value)
+      await promotionApi.updatePromotion(currentPromotion.value.id, payload)
     } else {
-      await promotionApi.createPromotion(formData.value)
+      await promotionApi.createPromotion(payload)
     }
     showModal.value = false
     fetchPromotions()

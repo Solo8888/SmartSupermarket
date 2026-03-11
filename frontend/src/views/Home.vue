@@ -6,9 +6,18 @@ import { computed } from 'vue'
 const router = useRouter()
 const userStore = useUserStore()
 
-const isInventoryManager = computed(() => {
-  return userStore.userInfo?.role === 'inventory_manager'
+const isManager = computed(() => {
+  return userStore.userInfo?.role === 'inventory_manager' || userStore.userInfo?.role === 'operations_manager'
 })
+
+const getRoleText = (role) => {
+  const roleMap = {
+    'customer': '顾客',
+    'inventory_manager': '库存管理员',
+    'operations_manager': '运营管理员'
+  }
+  return roleMap[role] || '顾客'
+}
 
 const handleLogout = () => {
   userStore.logout()
@@ -39,10 +48,10 @@ const goToAdmin = () => {
         <div class="user-details">
           <p><strong>用户ID:</strong> {{ userStore.userInfo?.user_id }}</p>
           <p><strong>手机号:</strong> {{ userStore.userInfo?.phone }}</p>
-          <p><strong>角色:</strong> {{ userStore.userInfo?.role === 'inventory_manager' ? '库存管理员' : '顾客' }}</p>
+          <p><strong>角色:</strong> {{ getRoleText(userStore.userInfo?.role) }}</p>
         </div>
         
-        <div v-if="isInventoryManager" class="admin-section">
+        <div v-if="isManager" class="admin-section">
           <button class="btn-admin" @click="goToAdmin">
             进入管理后台
           </button>
