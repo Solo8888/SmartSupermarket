@@ -214,3 +214,62 @@ class OrderService:
             "updated_at": order.updated_at,
             "items": items_dict
         }
+
+    @staticmethod
+    def pay_order(db: Session, order_id: str, payment_method: str, user) -> dict:
+        """
+        支付订单
+
+        Args:
+            db: 数据库会话
+            order_id: 订单ID
+            payment_method: 支付方式（alipay或wechat）
+            user: 当前用户
+
+        Returns:
+            支付成功的订单信息
+
+        Raises:
+            NotFoundError: 订单不存在
+            ValueError: 订单状态不正确
+        """
+        # 查询订单
+        order = db.query(Order).filter(Order.id == order_id).first()
+        if not order:
+            raise NotFoundError("订单不存在")
+
+        # 普通用户只能支付自己的订单
+        if user.role == 'customer' and order.user_id != user.id:
+            raise NotFoundError("订单不存在")
+
+        # 验证订单状态
+        if order.status != 'pending':
+            raise ValueError("只有待支付的订单才能支付")
+
+        # 更新订单状态和支付信息
+        order.status = 'paid'
+        order.payment_method = payment_method
+        order.payment_time = func.current_timestamp()
+        order.updated_at = func.current_timestamp()
+
+        db.commit()
+        db.refresh(order)
+
+        # 转换为字典返回
+        return {
+            "id": order.id,
+            "order_no": order.order_no,
+            "user_id": order.user_id,
+            "total_amount": order.total_amount,
+            "discount_amount": order.discount_amount,
+            "final_amount": order.final_amount,
+            "status": order.status,
+            "payment_method": order.payment_method,
+            "payment_time": order.payment_time,
+            "shipping_address": order.shipping_address,
+            "contact_name": order.contact_name,
+            "contact_phone": order.contact_phone,
+            "remark": order.remark,
+            "created_at": order.created_at,
+            "updated_at": order.updated_at
+        }

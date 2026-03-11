@@ -64,3 +64,8 @@ class OrderResponse(BaseModel):
 class OrderUpdateStatus(BaseModel):
     """更新订单状态请求"""
     status: str = Field(..., description="订单状态", pattern="^(pending|paid|shipped|completed|cancelled|refunded)$")
+
+
+class OrderPay(BaseModel):
+    """支付订单请求"""
+    payment_method: str = Field(..., description="支付方式", pattern="^(alipay|wechat)$")

@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from models import get_db, User
 from core.permitions import require_role
-from .schemas import OrderCreate, OrderResponse
+from .schemas import OrderCreate, OrderResponse, OrderPay
 from .service import OrderService
 from fastapi_pagination import Page, Params
 from typing import Optional
@@ -74,4 +74,27 @@ async def get_order(
         订单详情（包含订单项）
     """
     order = OrderService.get_order(db, order_id, user)
+    return OrderResponse(**order)
+
+
+@order_router.post('/{order_id}/pay', response_model=OrderResponse)
+async def pay_order(
+        order_id: str,
+        payload: OrderPay,
+        user: User = Depends(require_role('customer')),
+        db: Session = Depends(get_db)
+):
+    """
+    支付订单接口
+
+    Args:
+        order_id: 订单ID
+        payload: 支付请求体
+        user: 当前用户
+        db: 数据库会话
+
+    Returns:
+        支付成功的订单信息
+    """
+    order = OrderService.pay_order(db, order_id, payload.payment_method, user)
     return OrderResponse(**order)
