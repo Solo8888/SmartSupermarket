@@ -121,3 +121,24 @@ async def update_order_status(
     """
     order = OrderService.update_order_status(db, order_id, payload.status, user)
     return OrderResponse(**order)
+
+
+@order_router.post('/{order_id}/cancel', response_model=OrderResponse)
+async def cancel_order(
+        order_id: str,
+        user: User = Depends(require_role(['customer', 'inventory_manager', 'operations_manager'], mode='in')),
+        db: Session = Depends(get_db)
+):
+    """
+    取消订单接口
+
+    Args:
+        order_id: 订单ID
+        user: 当前用户
+        db: 数据库会话
+
+    Returns:
+        取消后的订单信息
+    """
+    order = OrderService.cancel_order(db, order_id, user)
+    return OrderResponse(**order)
