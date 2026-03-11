@@ -43,16 +43,18 @@ def extract_token_from_header(authorization: Optional[str]) -> Optional[str]:
     return parts[1]
 
 
-def require_role(required_role: str, mode: str = 'gte') -> Callable:
+def require_role(required_role, mode: str = 'gte') -> Callable:
     """
     统一的用户验证和权限检查依赖注入
 
     Args:
-        required_role: 所需的角色
+        required_role: 所需的角色，可以是单个角色字符串或角色列表
                       - 'admin'/'operations_manager'/'inventory_manager'/'customer' 等：需要特定角色权限
+                      - ['customer', 'operations_manager']: 需要任一角色
         mode: 权限检查方式
              - 'gte': 大于等于（默认），用于层级权限判断（如 merchant 及以上）
              - 'eq': 必须等于，用于特定角色限制（如必须是 agent）
+             - 'in': 角色在列表中，用于多角色允许
 
     Returns:
         异步依赖函数，返回 User 对象
@@ -67,6 +69,11 @@ def require_role(required_role: str, mode: str = 'gte') -> Callable:
         @router.post("/roles/merchants")
         async def add_merchant(user: User = Depends(require_role('agent', mode='eq'))):
             return {"merchant_id": "..."}
+            
+        # 多个角色中的任一都可以访问
+        @router.get("/orders")
+        async def list_orders(user: User = Depends(require_role(['customer', 'operations_manager'], mode='in'))):
+            return {"orders": "..."}
     """
 
     if not required_role:
@@ -76,7 +83,7 @@ def require_role(required_role: str, mode: str = 'gte') -> Callable:
             authorization: Optional[str] = Header(
                 None,
                 description="JWT认证令牌",
-                examples=["Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."]
+                examples=["Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ..."]
             ),
             db: Session = Depends(get_db)
     ) -> User:
@@ -94,10 +101,14 @@ def require_role(required_role: str, mode: str = 'gte') -> Callable:
         if user is None:
             raise UnauthorizedError("用户不存在")
 
-        user_level = ROLE_HIERARCHY.get(user.role, 0)
-        required_level = ROLE_HIERARCHY.get(required_role, 0)
-
-        if mode == 'eq':
+        if mode == 'in' and isinstance(required_role, list):
+            # 角色在列表中
+            if user.role not in required_role:
+                raise ClientError(
+                    f"此操作仅限{', '.join(required_role)}执行",
+                    "PERMISSION_DENIED"
+                )
+        elif mode == 'eq':
             # 必须等于
             if user.role != required_role:
                 raise ClientError(
@@ -106,6 +117,8 @@ def require_role(required_role: str, mode: str = 'gte') -> Callable:
                 )
         else:  # mode == 'gte'
             # 大于等于
+            user_level = ROLE_HIERARCHY.get(user.role, 0)
+            required_level = ROLE_HIERARCHY.get(required_role, 0)
             if user_level < required_level:
                 raise ClientError(
                     f"您的权限不足，需要{required_role}及以上权限",

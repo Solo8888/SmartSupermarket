@@ -8,6 +8,9 @@ from .schemas import OrderCreate
 from sqlalchemy import func
 from datetime import datetime
 import uuid
+from fastapi_pagination import Page, Params
+from fastapi_pagination.ext.sqlalchemy import paginate as sqlalchemy_paginate
+from typing import Optional
 
 
 class OrderService:
@@ -113,3 +116,37 @@ class OrderService:
             "created_at": order.created_at,
             "updated_at": order.updated_at
         }
+
+    @staticmethod
+    def get_orders(
+        db: Session,
+        params: Params,
+        user,
+        status: Optional[str] = None
+    ) -> Page[Order]:
+        """
+        获取订单列表（分页）
+
+        Args:
+            db: 数据库会话
+            params: 分页参数
+            user: 当前用户
+            status: 订单状态筛选（可选）
+
+        Returns:
+            订单列表（分页）
+        """
+        query = db.query(Order)
+
+        # 普通用户只能查看自己的订单
+        if user.role == 'customer':
+            query = query.filter(Order.user_id == user.id)
+
+        # 状态筛选
+        if status:
+            query = query.filter(Order.status == status)
+
+        # 按创建时间倒序排列
+        query = query.order_by(Order.created_at.desc())
+
+        return sqlalchemy_paginate(query, params=params)

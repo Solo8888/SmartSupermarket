@@ -1,12 +1,14 @@
 # 订单API路由
 # 提供订单的增删改查接口
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from models import get_db, User
 from core.permitions import require_role
 from .schemas import OrderCreate, OrderResponse
 from .service import OrderService
+from fastapi_pagination import Page, Params
+from typing import Optional
 
 order_router = APIRouter(prefix='/orders', tags=['orders'])
 
@@ -30,3 +32,25 @@ async def create_order(
     """
     order = OrderService.create_order(db, payload, user)
     return OrderResponse(**order)
+
+
+@order_router.get('/', response_model=Page[OrderResponse])
+async def get_orders(
+        params: Params = Depends(),
+        status: Optional[str] = Query(None, description="订单状态筛选"),
+        user: User = Depends(require_role(['customer', 'inventory_manager', 'operations_manager'], mode='in')),
+        db: Session = Depends(get_db)
+):
+    """
+    获取订单列表接口（分页）
+
+    Args:
+        params: 分页参数
+        status: 订单状态筛选（可选）
+        user: 当前用户
+        db: 数据库会话
+
+    Returns:
+        订单列表（分页）
+    """
+    return OrderService.get_orders(db, params, user, status)
