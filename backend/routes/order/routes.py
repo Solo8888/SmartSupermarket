@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from models import get_db, User
 from core.permitions import require_role
-from .schemas import OrderCreate, OrderResponse, OrderPay
+from .schemas import OrderCreate, OrderResponse, OrderPay, OrderUpdateStatus
 from .service import OrderService
 from fastapi_pagination import Page, Params
 from typing import Optional
@@ -97,4 +97,27 @@ async def pay_order(
         支付成功的订单信息
     """
     order = OrderService.pay_order(db, order_id, payload.payment_method, user)
+    return OrderResponse(**order)
+
+
+@order_router.put('/{order_id}/status', response_model=OrderResponse)
+async def update_order_status(
+        order_id: str,
+        payload: OrderUpdateStatus,
+        user: User = Depends(require_role(['inventory_manager', 'operations_manager'], mode='in')),
+        db: Session = Depends(get_db)
+):
+    """
+    更新订单状态接口
+
+    Args:
+        order_id: 订单ID
+        payload: 更新订单状态请求体
+        user: 当前用户
+        db: 数据库会话
+
+    Returns:
+        更新后的订单信息
+    """
+    order = OrderService.update_order_status(db, order_id, payload.status, user)
     return OrderResponse(**order)
