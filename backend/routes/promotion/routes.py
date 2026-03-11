@@ -49,3 +49,22 @@ async def get_promotions(
         促销活动列表（分页）
     """
     return PromotionService.get_promotions(db, params)
+
+
+@promotion_router.get('/{promotion_id}', response_model=PromotionResponse)
+async def get_promotion(
+        promotion_id: str,
+        db: Session = Depends(get_db)
+):
+    """
+    获取单个促销活动详情接口
+
+    Args:
+        promotion_id: 促销活动ID
+        db: 数据库会话
+
+    Returns:
+        促销活动详情
+    """
+    promotion = PromotionService.get_promotion(db, promotion_id)
+    return PromotionResponse(**promotion)

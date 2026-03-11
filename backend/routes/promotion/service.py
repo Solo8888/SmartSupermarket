@@ -6,6 +6,7 @@ from models.promotion import Promotion
 from .schemas import PromotionCreate
 from fastapi_pagination import Page, Params
 from fastapi_pagination.ext.sqlalchemy import paginate as sqlalchemy_paginate
+from core.exceptions import NotFoundError
 from sqlalchemy import func
 
 
@@ -70,3 +71,35 @@ class PromotionService:
         """
         query = db.query(Promotion).order_by(Promotion.created_at.desc())
         return sqlalchemy_paginate(query, params=params)
+
+    @staticmethod
+    def get_promotion(db: Session, promotion_id: str) -> dict:
+        """
+        获取单个促销活动详情
+
+        Args:
+            db: 数据库会话
+            promotion_id: 促销活动ID
+
+        Returns:
+            促销活动详情
+
+        Raises:
+            NotFoundError: 促销活动不存在
+        """
+        promotion = db.query(Promotion).filter(Promotion.id == promotion_id).first()
+        if not promotion:
+            raise NotFoundError("促销活动不存在")
+
+        return {
+            "id": promotion.id,
+            "name": promotion.name,
+            "description": promotion.description,
+            "type": promotion.type,
+            "value": promotion.value,
+            "start_time": promotion.start_time,
+            "end_time": promotion.end_time,
+            "status": promotion.status,
+            "created_at": promotion.created_at,
+            "updated_at": promotion.updated_at
+        }
