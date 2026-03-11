@@ -91,3 +91,20 @@ async def update_promotion(
     """
     promotion = PromotionService.update_promotion(db, promotion_id, payload, user)
     return PromotionResponse(**promotion)
+
+
+@promotion_router.delete('/{promotion_id}', status_code=204)
+async def delete_promotion(
+        promotion_id: str,
+        user: User = Depends(require_role('inventory_manager')),
+        db: Session = Depends(get_db)
+):
+    """
+    删除促销活动接口
+
+    Args:
+        promotion_id: 促销活动ID
+        user: 当前用户
+        db: 数据库会话
+    """
+    PromotionService.delete_promotion(db, promotion_id, user)

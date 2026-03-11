@@ -157,3 +157,25 @@ class PromotionService:
             "created_at": promotion.created_at,
             "updated_at": promotion.updated_at
         }
+
+    @staticmethod
+    def delete_promotion(db: Session, promotion_id: str, user) -> None:
+        """
+        删除促销活动
+
+        Args:
+            db: 数据库会话
+            promotion_id: 促销活动ID
+            user: 当前用户
+
+        Raises:
+            NotFoundError: 促销活动不存在
+        """
+        # 获取促销活动
+        promotion = db.query(Promotion).filter(Promotion.id == promotion_id).first()
+        if not promotion:
+            raise NotFoundError("促销活动不存在")
+
+        # 删除促销活动
+        db.delete(promotion)
+        db.commit()
