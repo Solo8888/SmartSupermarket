@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from models.order import Order, OrderItem
 from models.product import Product
 from .schemas import OrderCreate
+from core.exceptions import NotFoundError
 from sqlalchemy import func
 from datetime import datetime
 import uuid
@@ -150,3 +151,66 @@ class OrderService:
         query = query.order_by(Order.created_at.desc())
 
         return sqlalchemy_paginate(query, params=params)
+
+    @staticmethod
+    def get_order(db: Session, order_id: str, user) -> dict:
+        """
+        获取订单详情
+
+        Args:
+            db: 数据库会话
+            order_id: 订单ID
+            user: 当前用户
+
+        Returns:
+            订单详情（包含订单项）
+
+        Raises:
+            NotFoundError: 订单不存在
+        """
+        # 查询订单
+        order = db.query(Order).filter(Order.id == order_id).first()
+        if not order:
+            raise NotFoundError("订单不存在")
+
+        # 普通用户只能查看自己的订单
+        if user.role == 'customer' and order.user_id != user.id:
+            raise NotFoundError("订单不存在")
+
+        # 查询订单项
+        order_items = db.query(OrderItem).filter(OrderItem.order_id == order_id).all()
+
+        # 转换订单项为字典列表
+        items_dict = []
+        for item in order_items:
+            items_dict.append({
+                "id": item.id,
+                "order_id": item.order_id,
+                "product_id": item.product_id,
+                "product_name": item.product_name,
+                "product_image": item.product_image,
+                "price": item.price,
+                "quantity": item.quantity,
+                "subtotal": item.subtotal,
+                "created_at": item.created_at
+            })
+
+        # 转换为字典返回
+        return {
+            "id": order.id,
+            "order_no": order.order_no,
+            "user_id": order.user_id,
+            "total_amount": order.total_amount,
+            "discount_amount": order.discount_amount,
+            "final_amount": order.final_amount,
+            "status": order.status,
+            "payment_method": order.payment_method,
+            "payment_time": order.payment_time,
+            "shipping_address": order.shipping_address,
+            "contact_name": order.contact_name,
+            "contact_phone": order.contact_phone,
+            "remark": order.remark,
+            "created_at": order.created_at,
+            "updated_at": order.updated_at,
+            "items": items_dict
+        }

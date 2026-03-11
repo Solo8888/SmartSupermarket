@@ -54,3 +54,24 @@ async def get_orders(
         订单列表（分页）
     """
     return OrderService.get_orders(db, params, user, status)
+
+
+@order_router.get('/{order_id}', response_model=OrderResponse)
+async def get_order(
+        order_id: str,
+        user: User = Depends(require_role(['customer', 'inventory_manager', 'operations_manager'], mode='in')),
+        db: Session = Depends(get_db)
+):
+    """
+    获取订单详情接口
+
+    Args:
+        order_id: 订单ID
+        user: 当前用户
+        db: 数据库会话
+
+    Returns:
+        订单详情（包含订单项）
+    """
+    order = OrderService.get_order(db, order_id, user)
+    return OrderResponse(**order)
