@@ -1,0 +1,115 @@
+# 订单服务
+# 处理订单相关的业务逻辑
+
+from sqlalchemy.orm import Session
+from models.order import Order, OrderItem
+from models.product import Product
+from .schemas import OrderCreate
+from sqlalchemy import func
+from datetime import datetime
+import uuid
+
+
+class OrderService:
+    @staticmethod
+    def generate_order_no() -> str:
+        """
+        生成订单编号
+        
+        Returns:
+            订单编号
+        """
+        timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
+        random_str = str(uuid.uuid4())[:8].upper()
+        return f'ORD{timestamp}{random_str}'
+
+    @staticmethod
+    def create_order(db: Session, payload: OrderCreate, user) -> dict:
+        """
+        创建订单
+
+        Args:
+            db: 数据库会话
+            payload: 创建订单请求体
+            user: 当前用户
+
+        Returns:
+            创建成功的订单信息
+        """
+        from decimal import Decimal
+
+        # 生成订单编号
+        order_no = OrderService.generate_order_no()
+
+        # 计算订单金额
+        total_amount = Decimal('0')
+        order_items = []
+
+        for item_payload in payload.items:
+            # 查询商品信息
+            product = db.query(Product).filter(Product.id == item_payload.product_id).first()
+            if not product:
+                raise ValueError(f"商品 {item_payload.product_id} 不存在")
+
+            # 计算小计
+            subtotal = product.price * item_payload.quantity
+            total_amount += subtotal
+
+            # 创建订单项
+            order_item = OrderItem(
+                product_id=product.id,
+                product_name=product.name,
+                product_image=product.image_url,
+                price=product.price,
+                quantity=item_payload.quantity,
+                subtotal=subtotal
+            )
+            order_items.append(order_item)
+
+        # 计算最终金额（这里简化处理，没有优惠）
+        discount_amount = Decimal('0')
+        final_amount = total_amount - discount_amount
+
+        # 创建订单
+        order = Order(
+            order_no=order_no,
+            user_id=user.id,
+            total_amount=total_amount,
+            discount_amount=discount_amount,
+            final_amount=final_amount,
+            status='pending',
+            shipping_address=payload.shipping_address,
+            contact_name=payload.contact_name,
+            contact_phone=payload.contact_phone,
+            remark=payload.remark
+        )
+
+        db.add(order)
+        db.flush()
+
+        # 保存订单项
+        for order_item in order_items:
+            order_item.order_id = order.id
+            db.add(order_item)
+
+        db.commit()
+        db.refresh(order)
+
+        # 转换为字典返回
+        return {
+            "id": order.id,
+            "order_no": order.order_no,
+            "user_id": order.user_id,
+            "total_amount": order.total_amount,
+            "discount_amount": order.discount_amount,
+            "final_amount": order.final_amount,
+            "status": order.status,
+            "payment_method": order.payment_method,
+            "payment_time": order.payment_time,
+            "shipping_address": order.shipping_address,
+            "contact_name": order.contact_name,
+            "contact_phone": order.contact_phone,
+            "remark": order.remark,
+            "created_at": order.created_at,
+            "updated_at": order.updated_at
+        }

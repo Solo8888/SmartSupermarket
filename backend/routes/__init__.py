@@ -5,6 +5,7 @@ from .product.routes import product_router
 from .upload.routes import upload_router
 from .inventory.routes import inventory_router
 from .promotion.routes import promotion_router
+from .order.routes import order_router
 
 __all__ = [
     "auth_router",
@@ -12,5 +13,6 @@ __all__ = [
     "product_router",
     "upload_router",
     "inventory_router",
-    "promotion_router"
+    "promotion_router",
+    "order_router"
 ]

@@ -27,6 +27,7 @@ from .category import Category
 from .product import Product
 from .inventory import Inventory
 from .promotion import Promotion
+from .order import Order, OrderItem
 
 
 def get_db() -> Session:
