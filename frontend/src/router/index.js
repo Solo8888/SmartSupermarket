@@ -55,6 +55,41 @@ const routes = [
         meta: { title: '促销活动管理', requiresRole: 'operations_manager' }
       }
     ]
+  },
+  {
+    path: '/customer',
+    component: () => import('../layouts/CustomerLayout.vue'),
+    meta: { requiresAuth: true },
+    children: [
+      {
+        path: '',
+        redirect: '/customer/home'
+      },
+      {
+        path: 'home',
+        name: 'CustomerHome',
+        component: () => import('../views/customer/CustomerHome.vue'),
+        meta: { title: '首页', requiresRole: 'customer' }
+      },
+      {
+        path: 'cart',
+        name: 'Cart',
+        component: () => import('../views/customer/Cart.vue'),
+        meta: { title: '购物车', requiresRole: 'customer' }
+      },
+      {
+        path: 'orders',
+        name: 'CustomerOrders',
+        component: () => import('../views/customer/Orders.vue'),
+        meta: { title: '我的订单', requiresRole: 'customer' }
+      },
+      {
+        path: 'profile',
+        name: 'Profile',
+        component: () => import('../views/customer/Profile.vue'),
+        meta: { title: '我的', requiresRole: 'customer' }
+      }
+    ]
   }
 ]
 
@@ -75,15 +110,20 @@ router.beforeEach((to, from, next) => {
   
   const isAuthenticated = !!accessToken
   const isManager = userInfo?.role === 'inventory_manager' || userInfo?.role === 'operations_manager'
+  const isCustomer = userInfo?.role === 'customer'
   
   if (to.meta.requiresAuth && !isAuthenticated) {
     next('/login')
-  } else if (to.path.startsWith('/admin') && !isManager) {
-    next('/home')
   } else if (to.meta.requiresRole && userInfo?.role !== to.meta.requiresRole) {
+    next('/home')
+  } else if (to.meta.requiresRoles && !to.meta.requiresRoles.includes(userInfo?.role)) {
     next('/home')
   } else if (to.path === '/admin' && userInfo?.role === 'operations_manager') {
     next('/admin/promotions')
+  } else if (to.path === '/admin' && userInfo?.role === 'inventory_manager') {
+    next('/admin/categories')
+  } else if (to.path === '/admin' && userInfo?.role === 'customer') {
+    next('/customer/home')
   } else if ((to.path === '/login' || to.path === '/register') && isAuthenticated) {
     if (isManager) {
       if (userInfo?.role === 'operations_manager') {
@@ -91,14 +131,18 @@ router.beforeEach((to, from, next) => {
       } else {
         next('/admin/categories')
       }
-    } else {
-      next('/home')
+    } else if (isCustomer) {
+      next('/customer/home')
     }
-  } else if (to.path === '/home' && isManager) {
-    if (userInfo?.role === 'operations_manager') {
-      next('/admin/promotions')
-    } else {
-      next('/admin/categories')
+  } else if (to.path === '/home' && isAuthenticated) {
+    if (isManager) {
+      if (userInfo?.role === 'operations_manager') {
+        next('/admin/promotions')
+      } else {
+        next('/admin/categories')
+      }
+    } else if (isCustomer) {
+      next('/customer/home')
     }
   } else {
     next()

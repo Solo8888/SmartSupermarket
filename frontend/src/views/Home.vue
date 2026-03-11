@@ -10,6 +10,10 @@ const isManager = computed(() => {
   return userStore.userInfo?.role === 'inventory_manager' || userStore.userInfo?.role === 'operations_manager'
 })
 
+const isCustomer = computed(() => {
+  return userStore.userInfo?.role === 'customer'
+})
+
 const getRoleText = (role) => {
   const roleMap = {
     'customer': '顾客',
@@ -25,7 +29,13 @@ const handleLogout = () => {
 }
 
 const goToAdmin = () => {
-  router.push('/admin/categories')
+  if (userStore.userInfo?.role === 'inventory_manager') {
+    router.push('/admin/categories')
+  } else if (userStore.userInfo?.role === 'operations_manager') {
+    router.push('/admin/promotions')
+  } else {
+    router.push('/admin/orders')
+  }
 }
 </script>
 
@@ -51,9 +61,9 @@ const goToAdmin = () => {
           <p><strong>角色:</strong> {{ getRoleText(userStore.userInfo?.role) }}</p>
         </div>
         
-        <div v-if="isManager" class="admin-section">
+        <div v-if="isManager || isCustomer" class="admin-section">
           <button class="btn-admin" @click="goToAdmin">
-            进入管理后台
+            {{ isManager ? '进入管理后台' : '进入订单管理' }}
           </button>
         </div>
       </div>

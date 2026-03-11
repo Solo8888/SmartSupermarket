@@ -38,7 +38,7 @@ async def create_order(
 async def get_orders(
         params: Params = Depends(),
         status: Optional[str] = Query(None, description="订单状态筛选"),
-        user: User = Depends(require_role(['customer', 'inventory_manager', 'operations_manager'], mode='in')),
+        user: User = Depends(require_role('customer')),
         db: Session = Depends(get_db)
 ):
     """
@@ -59,7 +59,7 @@ async def get_orders(
 @order_router.get('/{order_id}', response_model=OrderResponse)
 async def get_order(
         order_id: str,
-        user: User = Depends(require_role(['customer', 'inventory_manager', 'operations_manager'], mode='in')),
+        user: User = Depends(require_role('customer')),
         db: Session = Depends(get_db)
 ):
     """
@@ -126,7 +126,7 @@ async def update_order_status(
 @order_router.post('/{order_id}/cancel', response_model=OrderResponse)
 async def cancel_order(
         order_id: str,
-        user: User = Depends(require_role(['customer', 'inventory_manager', 'operations_manager'], mode='in')),
+        user: User = Depends(require_role('customer')),
         db: Session = Depends(get_db)
 ):
     """
