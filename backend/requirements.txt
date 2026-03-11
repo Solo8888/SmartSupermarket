@@ -9,3 +9,7 @@ sqlalchemy
 pymysql
 cryptography
 python-multipart
+pandas
+openpyxl
+xlrd
+uuid-utils
