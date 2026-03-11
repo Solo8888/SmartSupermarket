@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from models import get_db, User
 from core.permitions import require_role
-from .schemas import PromotionCreate, PromotionResponse
+from .schemas import PromotionCreate, PromotionResponse, PromotionUpdate
 from .service import PromotionService
 from fastapi_pagination import Page, Params
 
@@ -67,4 +67,27 @@ async def get_promotion(
         促销活动详情
     """
     promotion = PromotionService.get_promotion(db, promotion_id)
+    return PromotionResponse(**promotion)
+
+
+@promotion_router.put('/{promotion_id}', response_model=PromotionResponse)
+async def update_promotion(
+        promotion_id: str,
+        payload: PromotionUpdate,
+        user: User = Depends(require_role('inventory_manager')),
+        db: Session = Depends(get_db)
+):
+    """
+    更新促销活动接口
+
+    Args:
+        promotion_id: 促销活动ID
+        payload: 更新促销活动请求体
+        user: 当前用户
+        db: 数据库会话
+
+    Returns:
+        更新成功的促销活动信息
+    """
+    promotion = PromotionService.update_promotion(db, promotion_id, payload, user)
     return PromotionResponse(**promotion)

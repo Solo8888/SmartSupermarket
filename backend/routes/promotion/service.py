@@ -103,3 +103,57 @@ class PromotionService:
             "created_at": promotion.created_at,
             "updated_at": promotion.updated_at
         }
+
+    @staticmethod
+    def update_promotion(db: Session, promotion_id: str, payload, user) -> dict:
+        """
+        更新促销活动
+
+        Args:
+            db: 数据库会话
+            promotion_id: 促销活动ID
+            payload: 更新促销活动请求体
+            user: 当前用户
+
+        Returns:
+            更新成功的促销活动信息
+
+        Raises:
+            NotFoundError: 促销活动不存在
+        """
+        from .schemas import PromotionUpdate
+
+        # 获取促销活动
+        promotion = db.query(Promotion).filter(Promotion.id == promotion_id).first()
+        if not promotion:
+            raise NotFoundError("促销活动不存在")
+
+        # 验证时间逻辑（如果提供了start_time或end_time）
+        start_time = payload.start_time if payload.start_time is not None else promotion.start_time
+        end_time = payload.end_time if payload.end_time is not None else promotion.end_time
+        if start_time >= end_time:
+            raise ValueError("开始时间必须早于结束时间")
+
+        # 更新字段（只更新提供的字段）
+        update_data = payload.model_dump(exclude_unset=True)
+        for field, value in update_data.items():
+            setattr(promotion, field, value)
+
+        # 更新时间戳
+        promotion.updated_at = func.current_timestamp()
+
+        db.commit()
+        db.refresh(promotion)
+
+        return {
+            "id": promotion.id,
+            "name": promotion.name,
+            "description": promotion.description,
+            "type": promotion.type,
+            "value": promotion.value,
+            "start_time": promotion.start_time,
+            "end_time": promotion.end_time,
+            "status": promotion.status,
+            "created_at": promotion.created_at,
+            "updated_at": promotion.updated_at
+        }
