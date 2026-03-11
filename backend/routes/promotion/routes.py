@@ -15,7 +15,7 @@ promotion_router = APIRouter(prefix='/promotions', tags=['promotions'])
 @promotion_router.post('/', response_model=PromotionResponse)
 async def create_promotion(
         payload: PromotionCreate,
-        user: User = Depends(require_role('inventory_manager')),
+        user: User = Depends(require_role('operations_manager')),
         db: Session = Depends(get_db)
 ):
     """
@@ -74,7 +74,7 @@ async def get_promotion(
 async def update_promotion(
         promotion_id: str,
         payload: PromotionUpdate,
-        user: User = Depends(require_role('inventory_manager')),
+        user: User = Depends(require_role('operations_manager')),
         db: Session = Depends(get_db)
 ):
     """
@@ -96,7 +96,7 @@ async def update_promotion(
 @promotion_router.delete('/{promotion_id}', status_code=204)
 async def delete_promotion(
         promotion_id: str,
-        user: User = Depends(require_role('inventory_manager')),
+        user: User = Depends(require_role('operations_manager')),
         db: Session = Depends(get_db)
 ):
     """
