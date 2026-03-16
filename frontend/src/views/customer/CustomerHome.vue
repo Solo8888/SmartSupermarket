@@ -1,7 +1,7 @@
 <script setup>
-import { ref, onMounted, computed } from 'vue'
-import { productApi } from '../../api/product'
-import { categoryApi } from '../../api/category'
+import { ref, onMounted } from 'vue'
+import * as productApi from '../../api/product'
+import * as categoryApi from '../../api/category'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
@@ -17,7 +17,10 @@ const searchQuery = ref('')
 const fetchProducts = async () => {
   loading.value = true
   try {
-    const params = { page: page.value, size: size.value }
+    const params = { 
+      page: page.value, 
+      size: size.value
+    }
     if (searchQuery.value) {
       params.search = searchQuery.value
     }
@@ -26,11 +29,11 @@ const fetchProducts = async () => {
     }
     const response = await productApi.getProducts(params)
     if (page.value === 1) {
-      products.value = response.items || []
+      products.value = response.data.items || []
     } else {
-      products.value = [...products.value, ...(response.items || [])]
+      products.value = [...products.value, ...(response.data.items || [])]
     }
-    total.value = response.total || 0
+    total.value = response.data.total || 0
   } catch (err) {
     console.error('获取商品失败:', err)
   } finally {
@@ -41,7 +44,7 @@ const fetchProducts = async () => {
 const fetchCategories = async () => {
   try {
     const response = await categoryApi.getAllCategories()
-    categories.value = response || []
+    categories.value = response.data || []
   } catch (err) {
     console.error('获取分类失败:', err)
   }

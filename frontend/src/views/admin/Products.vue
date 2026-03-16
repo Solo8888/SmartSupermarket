@@ -1,8 +1,8 @@
 <script setup>
 import { ref, onMounted } from 'vue'
-import { productApi } from '../../api/product'
-import { categoryApi } from '../../api/category'
-import { uploadApi } from '../../api/upload'
+import * as productApi from '../../api/product'
+import * as categoryApi from '../../api/category'
+import * as uploadApi from '../../api/upload'
 import CategoryCascader from '../../components/CategoryCascader.vue'
 
 const products = ref([])
@@ -23,11 +23,14 @@ const formData = ref({
   name: '',
   category_id: null,
   price: 0,
+  purchase_price: 0,
   original_price: null,
   description: '',
   image_url: '',
   barcode: '',
   brand: '',
+  origin: '',
+  shelf_life: null,
   unit: '个',
   status: 'active'
 })
@@ -40,8 +43,8 @@ const fetchProducts = async () => {
       params.search = searchQuery.value
     }
     const response = await productApi.getProducts(params)
-    products.value = response.items || []
-    total.value = response.total || 0
+    products.value = response.data.items || []
+    total.value = response.data.total || 0
   } catch (err) {
     console.error('获取商品失败:', err)
   } finally {
@@ -63,7 +66,7 @@ const clearSearch = () => {
 const fetchCategories = async () => {
   try {
     const response = await categoryApi.getAllCategories()
-    categories.value = response || []
+    categories.value = response.data || []
   } catch (err) {
     console.error('获取分类失败:', err)
   }
@@ -78,11 +81,14 @@ const openCreateModal = () => {
     name: '',
     category_id: null,
     price: 0,
+    purchase_price: 0,
     original_price: null,
     description: '',
     image_url: '',
     barcode: '',
     brand: '',
+    origin: '',
+    shelf_life: null,
     unit: '个',
     status: 'active'
   }
@@ -98,11 +104,14 @@ const openEditModal = (product) => {
     name: product.name,
     category_id: product.category_id,
     price: product.price,
+    purchase_price: product.purchase_price || 0,
     original_price: product.original_price || null,
     description: product.description || '',
     image_url: product.image_url || '',
     barcode: product.barcode || '',
     brand: product.brand || '',
+    origin: product.origin || '',
+    shelf_life: product.shelf_life || null,
     unit: product.unit || '个',
     status: product.status
   }
@@ -343,8 +352,30 @@ onMounted(() => {
               <input v-model.number="formData.price" type="number" step="0.01" placeholder="请输入售价" />
             </div>
             <div class="form-group">
+              <label>进货价格 *</label>
+              <input v-model.number="formData.purchase_price" type="number" step="0.01" placeholder="请输入进货价格" />
+            </div>
+          </div>
+          
+          <div class="form-row">
+            <div class="form-group">
               <label>原价</label>
               <input v-model.number="formData.original_price" type="number" step="0.01" placeholder="请输入原价" />
+            </div>
+            <div class="form-group">
+              <label>产地</label>
+              <input v-model="formData.origin" type="text" placeholder="请输入产地" />
+            </div>
+          </div>
+          
+          <div class="form-row">
+            <div class="form-group">
+              <label>保质期（天）</label>
+              <input v-model.number="formData.shelf_life" type="number" min="0" placeholder="请输入保质期" />
+            </div>
+            <div class="form-group">
+              <label>品牌</label>
+              <input v-model="formData.brand" type="text" placeholder="请输入品牌" />
             </div>
           </div>
           

@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
-import { inventoryApi } from '../../api/inventory'
-import { productApi } from '../../api/product'
+import * as inventoryApi from '../../api/inventory'
+import * as productApi from '../../api/product'
 
 const inventories = ref([])
 const products = ref([])
@@ -32,8 +32,8 @@ const fetchInventories = async () => {
       params.search = searchQuery.value
     }
     const response = await inventoryApi.getInventories(params)
-    inventories.value = response.items || []
-    total.value = response.total || 0
+    inventories.value = response.data || []
+    total.value = response.data.total || 0
   } catch (err) {
     console.error('获取库存失败:', err)
   } finally {
@@ -55,7 +55,7 @@ const clearSearch = () => {
 const fetchProducts = async () => {
   try {
     const response = await productApi.getAllProducts()
-    products.value = response || []
+    products.value = response.data || []
   } catch (err) {
     console.error('获取商品失败:', err)
   }
@@ -186,7 +186,6 @@ onMounted(() => {
                 <tr>
                   <th>商品ID</th>
                   <th>商品名称</th>
-                  <th>仓库ID</th>
                   <th>库存数量</th>
                   <th>预警数量</th>
                   <th>状态</th>
@@ -198,7 +197,6 @@ onMounted(() => {
                 <tr v-for="inventory in inventories" :key="inventory.id">
                   <td>{{ inventory.product_id }}</td>
                   <td class="product-name">{{ getProductName(inventory.product_id) }}</td>
-                  <td>{{ inventory.warehouse_id }}</td>
                   <td class="stock-quantity">{{ inventory.stock_quantity }}</td>
                   <td>{{ inventory.warning_quantity }}</td>
                   <td>

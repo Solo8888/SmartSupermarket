@@ -34,14 +34,19 @@
           <span>合计：</span>
           <span class="price">¥{{ formatPrice(totalPrice) }}</span>
         </div>
-        <button class="checkout-btn" @click="checkout">结算 ({{ totalQuantity }})</button>
+        <button 
+          class="checkout-btn" 
+          @click="checkout"
+        >
+          结算 ({{ totalQuantity }})
+        </button>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
@@ -84,6 +89,24 @@ const removeItem = (itemId) => {
 const checkout = () => {
   alert('结算功能开发中...')
 }
+
+onMounted(() => {
+  // 模拟购物车数据
+  cartItems.value = [
+    {
+      id: 1,
+      name: '新鲜苹果',
+      price: 9.99,
+      quantity: 2
+    },
+    {
+      id: 2,
+      name: '有机蔬菜',
+      price: 15.99,
+      quantity: 1
+    }
+  ]
+})
 </script>
 
 <style scoped>
@@ -252,5 +275,11 @@ const checkout = () => {
   font-size: 15px;
   font-weight: 500;
   cursor: pointer;
+  transition: all 0.3s;
+}
+
+.checkout-btn:disabled {
+  background-color: #ffccc7;
+  cursor: not-allowed;
 }
 </style>

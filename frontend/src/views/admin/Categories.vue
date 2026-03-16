@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
-import { categoryApi } from '../../api/category'
+import * as categoryApi from '../../api/category'
 import TreeNode from '../../components/TreeNode.vue'
 
 const categories = ref([])
@@ -14,9 +14,7 @@ const formData = ref({
   name: '',
   parent_id: null,
   description: '',
-  level: 1,
-  sort_order: 0,
-  status: 'active'
+  sort_order: 0
 })
 
 const buildTree = (flatList) => {
@@ -56,7 +54,7 @@ const fetchCategories = async () => {
   loading.value = true
   try {
     const response = await categoryApi.getAllCategories()
-    categories.value = response || []
+    categories.value = response.data || []
   } catch (err) {
     console.error('获取分类失败:', err)
   } finally {
@@ -79,16 +77,14 @@ const isExpanded = (node, parentId = null) => {
   return expandedNodes.value.has(key) && expandedNodes.value.get(key) === node.id
 }
 
-const openCreateModal = (parentId = null, parentLevel = 0) => {
+const openCreateModal = (parentId = null) => {
   isEdit.value = false
   currentCategory.value = null
   formData.value = {
     name: '',
     parent_id: parentId,
     description: '',
-    level: parentLevel + 1,
-    sort_order: 0,
-    status: 'active'
+    sort_order: 0
   }
   showModal.value = true
 }
@@ -100,9 +96,7 @@ const openEditModal = (category) => {
     name: category.name,
     parent_id: category.parent_id,
     description: category.description || '',
-    level: category.level,
-    sort_order: category.sort_order,
-    status: category.status
+    sort_order: category.sort_order
   }
   showModal.value = true
 }
@@ -193,13 +187,6 @@ onMounted(() => {
           <div class="form-group">
             <label>排序</label>
             <input v-model.number="formData.sort_order" type="number" placeholder="数字越小越靠前" />
-          </div>
-          <div class="form-group">
-            <label>状态</label>
-            <select v-model="formData.status">
-              <option value="active">启用</option>
-              <option value="inactive">禁用</option>
-            </select>
           </div>
         </div>
         <div class="modal-footer">

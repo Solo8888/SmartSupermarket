@@ -1,27 +1,25 @@
 import request from './index'
 
-export const orderApi = {
-  getOrders(params) {
-    return request.get('/orders', { params })
-  },
+export const getOrders = (params) => {
+  return request.get('/orders', { params })
+}
 
-  getOrder(id) {
-    return request.get(`/orders/${id}`)
-  },
+export const getOrder = (id) => {
+  return request.get(`/orders/${id}`)
+}
 
-  createOrder(data) {
-    return request.post('/orders', data)
-  },
+export const createOrder = (data) => {
+  return request.post('/orders', data)
+}
 
-  payOrder(id, data) {
-    return request.post(`/orders/${id}/pay`, data)
-  },
+export const payOrder = (id, data) => {
+  return request.post(`/orders/${id}/pay`, data)
+}
 
-  updateOrderStatus(id, data) {
-    return request.put(`/orders/${id}/status`, data)
-  },
+export const updateOrderStatus = (id, data) => {
+  return request.put(`/orders/${id}/status`, data)
+}
 
-  cancelOrder(id) {
-    return request.post(`/orders/${id}/cancel`)
-  }
+export const cancelOrder = (id) => {
+  return request.post(`/orders/${id}/cancel`)
 }

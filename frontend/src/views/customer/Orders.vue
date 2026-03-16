@@ -82,7 +82,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { orderApi } from '../../api/order'
+import * as orderApi from '../../api/order'
 
 const tabs = [
   { label: '全部', value: 'all' },

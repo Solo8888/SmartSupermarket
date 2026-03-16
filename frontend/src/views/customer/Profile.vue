@@ -17,11 +17,6 @@
           <span class="menu-text">我的订单</span>
           <span class="menu-arrow">›</span>
         </div>
-        <div class="menu-item" @click="goToAddress">
-          <span class="menu-icon">📍</span>
-          <span class="menu-text">收货地址</span>
-          <span class="menu-arrow">›</span>
-        </div>
       </div>
       
       <div class="menu-section">
@@ -60,22 +55,22 @@ const userAvatar = computed(() => {
   return name.charAt(0).toUpperCase()
 })
 
+// 导航到订单页面
 const goToOrders = () => {
-  alert('我的订单功能开发中...')
+  router.push('/customer/orders')
 }
 
-const goToAddress = () => {
-  alert('收货地址功能开发中...')
-}
-
+// 打开设置页面
 const goToSettings = () => {
   alert('设置功能开发中...')
 }
 
+// 打开关于我们页面
 const goToAbout = () => {
   alert('关于我们功能开发中...')
 }
 
+// 退出登录
 const logout = () => {
   userStore.logout()
   router.push('/login')
@@ -127,6 +122,7 @@ const logout = () => {
 .phone {
   font-size: 14px;
   color: rgba(255, 255, 255, 0.8);
+  margin-bottom: 8px;
 }
 
 .menu-list {
