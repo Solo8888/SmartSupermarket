@@ -11,9 +11,7 @@ class CategoryCreate(BaseModel):
     name: str = Field(..., description="分类名称", max_length=50)
     parent_id: Optional[str] = Field(None, description="父分类ID")
     description: Optional[str] = Field(None, description="分类描述")
-    level: int = Field(1, description="分类级别", ge=1)
     sort_order: int = Field(0, description="排序顺序", ge=0)
-    status: str = Field("active", description="状态", pattern="^(active|inactive)$")
 
 
 class CategoryUpdate(BaseModel):
@@ -21,9 +19,7 @@ class CategoryUpdate(BaseModel):
     name: Optional[str] = Field(None, description="分类名称", max_length=50)
     parent_id: Optional[str] = Field(None, description="父分类ID")
     description: Optional[str] = Field(None, description="分类描述")
-    level: Optional[int] = Field(None, description="分类级别", ge=1)
     sort_order: Optional[int] = Field(None, description="排序顺序", ge=0)
-    status: Optional[str] = Field(None, description="状态", pattern="^(active|inactive)$")
 
 
 class CategoryResponse(BaseModel):
@@ -32,9 +28,7 @@ class CategoryResponse(BaseModel):
     name: str
     parent_id: Optional[str] = None
     description: Optional[str] = None
-    level: int
     sort_order: int
-    status: str
     created_at: datetime
     updated_at: datetime
 

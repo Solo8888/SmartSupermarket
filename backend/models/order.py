@@ -1,7 +1,7 @@
 # 订单模型
 # 定义订单相关的数据库模型
 import uuid
-from sqlalchemy import Column, Integer, String, Text, SmallInteger, Enum, ForeignKey, DateTime, Numeric
+from sqlalchemy import Column, Integer, String, Text, Enum, ForeignKey, DateTime, Numeric
 from sqlalchemy.dialects.mysql import CHAR
 from sqlalchemy.sql import func
 from . import Base

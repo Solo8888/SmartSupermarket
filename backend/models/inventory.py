@@ -12,8 +12,7 @@ class Inventory(Base):
     __tablename__ = "inventory"
 
     id = Column(CHAR(36), primary_key=True, default=lambda: str(uuid.uuid4()), comment='库存ID')
-    product_id = Column(CHAR(36), ForeignKey('products.id', ondelete='CASCADE'), nullable=False, unique=True, comment='商品ID')
-    warehouse_id = Column(Integer, nullable=False, default=1, comment='仓库ID')
+    product_id = Column(CHAR(36), ForeignKey('products.id', ondelete='CASCADE'), nullable=False, comment='商品ID')
     stock_quantity = Column(Integer, nullable=False, default=0, comment='库存数量')
     warning_quantity = Column(Integer, nullable=False, default=10, comment='预警数量')
     last_stock_time = Column(DateTime, default=func.current_timestamp(), nullable=False, comment='最后库存更新时间')

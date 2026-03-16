@@ -61,7 +61,6 @@ class InventoryService:
         return {
             "id": inventory.id,
             "product_id": inventory.product_id,
-            "warehouse_id": inventory.warehouse_id,
             "stock_quantity": inventory.stock_quantity,
             "warning_quantity": inventory.warning_quantity,
             "last_stock_time": inventory.last_stock_time,
@@ -103,7 +102,6 @@ class InventoryService:
         return {
             "id": inventory.id,
             "product_id": inventory.product_id,
-            "warehouse_id": inventory.warehouse_id,
             "stock_quantity": inventory.stock_quantity,
             "warning_quantity": inventory.warning_quantity,
             "last_stock_time": inventory.last_stock_time,
@@ -136,7 +134,8 @@ class InventoryService:
         if not inventory:
             inventory = Inventory(
                 product_id=product_id,
-                stock_quantity=payload.quantity
+                stock_quantity=payload.quantity,
+                warning_quantity=10
             )
             db.add(inventory)
         else:
@@ -151,7 +150,6 @@ class InventoryService:
         return {
             "id": inventory.id,
             "product_id": inventory.product_id,
-            "warehouse_id": inventory.warehouse_id,
             "stock_quantity": inventory.stock_quantity,
             "warning_quantity": inventory.warning_quantity,
             "last_stock_time": inventory.last_stock_time,
@@ -194,7 +192,6 @@ class InventoryService:
         return {
             "id": inventory.id,
             "product_id": inventory.product_id,
-            "warehouse_id": inventory.warehouse_id,
             "stock_quantity": inventory.stock_quantity,
             "warning_quantity": inventory.warning_quantity,
             "last_stock_time": inventory.last_stock_time,

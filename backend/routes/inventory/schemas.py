@@ -30,7 +30,6 @@ class InventoryResponse(BaseModel):
     """库存响应"""
     id: str
     product_id: str
-    warehouse_id: int
     stock_quantity: int
     warning_quantity: int
     last_stock_time: datetime

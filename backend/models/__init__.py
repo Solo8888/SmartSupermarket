@@ -28,6 +28,14 @@ from .product import Product
 from .inventory import Inventory
 from .promotion import Promotion
 from .order import Order, OrderItem
+from .store import Store
+from .member_levels import MemberLevel
+from .member import Member
+from .coupon import Coupon
+from .user_coupon import UserCoupon
+from .address_book import AddressBook
+from .promotion_product import PromotionProduct
+from .promotion_category import PromotionCategory
 
 
 def get_db() -> Session:

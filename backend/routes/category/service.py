@@ -35,9 +35,7 @@ class CategoryService:
             name=payload.name,
             parent_id=payload.parent_id,
             description=payload.description,
-            level=payload.level,
-            sort_order=payload.sort_order,
-            status=payload.status
+            sort_order=payload.sort_order
         )
 
         db.add(category)
@@ -50,9 +48,7 @@ class CategoryService:
             "name": category.name,
             "parent_id": category.parent_id,
             "description": category.description,
-            "level": category.level,
             "sort_order": category.sort_order,
-            "status": category.status,
             "created_at": category.created_at,
             "updated_at": category.updated_at
         }
@@ -90,9 +86,7 @@ class CategoryService:
                 "name": cat.name,
                 "parent_id": cat.parent_id,
                 "description": cat.description,
-                "level": cat.level,
                 "sort_order": cat.sort_order,
-                "status": cat.status,
                 "created_at": cat.created_at,
                 "updated_at": cat.updated_at
             }
@@ -122,10 +116,9 @@ class CategoryService:
             "id": category.id,
             "name": category.name,
             "parent_id": category.parent_id,
+
             "description": category.description,
-            "level": category.level,
             "sort_order": category.sort_order,
-            "status": category.status,
             "created_at": category.created_at,
             "updated_at": category.updated_at
         }
@@ -173,10 +166,9 @@ class CategoryService:
             "id": category.id,
             "name": category.name,
             "parent_id": category.parent_id,
+
             "description": category.description,
-            "level": category.level,
             "sort_order": category.sort_order,
-            "status": category.status,
             "created_at": category.created_at,
             "updated_at": category.updated_at
         }

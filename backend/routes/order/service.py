@@ -104,6 +104,7 @@ class OrderService:
             "id": order.id,
             "order_no": order.order_no,
             "user_id": order.user_id,
+
             "total_amount": order.total_amount,
             "discount_amount": order.discount_amount,
             "final_amount": order.final_amount,
@@ -200,6 +201,7 @@ class OrderService:
             "id": order.id,
             "order_no": order.order_no,
             "user_id": order.user_id,
+
             "total_amount": order.total_amount,
             "discount_amount": order.discount_amount,
             "final_amount": order.final_amount,
@@ -260,6 +262,7 @@ class OrderService:
             "id": order.id,
             "order_no": order.order_no,
             "user_id": order.user_id,
+
             "total_amount": order.total_amount,
             "discount_amount": order.discount_amount,
             "final_amount": order.final_amount,
@@ -314,6 +317,7 @@ class OrderService:
             "id": order.id,
             "order_no": order.order_no,
             "user_id": order.user_id,
+
             "total_amount": order.total_amount,
             "discount_amount": order.discount_amount,
             "final_amount": order.final_amount,
@@ -370,6 +374,7 @@ class OrderService:
             "id": order.id,
             "order_no": order.order_no,
             "user_id": order.user_id,
+
             "total_amount": order.total_amount,
             "discount_amount": order.discount_amount,
             "final_amount": order.final_amount,
