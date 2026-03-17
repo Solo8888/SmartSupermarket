@@ -138,3 +138,34 @@ class UserStoreService:
             }
             for allocation in allocations
         ]
+    
+    @staticmethod
+    def delete_store_allocation(db: Session, allocation_id: str, current_user) -> dict:
+        """
+        取消门店分配
+
+        Args:
+            db: 数据库会话
+            allocation_id: 分配ID
+            current_user: 当前用户
+
+        Returns:
+            删除成功的信息
+
+        Raises:
+            NotFoundError: 分配不存在
+        """
+        # 检查分配是否存在
+        allocation = db.query(UserStore).filter(UserStore.id == allocation_id).first()
+        if not allocation:
+            raise NotFoundError("分配不存在")
+
+        # 删除分配
+        db.delete(allocation)
+        db.commit()
+
+        # 返回删除成功信息
+        return {
+            "message": "门店分配已取消",
+            "id": allocation_id
+        }

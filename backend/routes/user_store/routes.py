@@ -72,3 +72,24 @@ async def get_store_users(
     """
     users = UserStoreService.get_store_users(db, store_id, user)
     return users
+
+
+@user_store_router.delete('/{id}')
+async def delete_store_allocation(
+        id: str,
+        user: User = Depends(require_role('system_admin', mode='eq')),
+        db: Session = Depends(get_db)
+):
+    """
+    取消门店分配接口
+
+    Args:
+        id: 分配ID
+        user: 当前用户
+        db: 数据库会话
+
+    Returns:
+        删除成功的信息
+    """
+    result = UserStoreService.delete_store_allocation(db, id, user)
+    return result
