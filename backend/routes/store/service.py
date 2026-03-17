@@ -163,3 +163,25 @@ class StoreService:
             "created_at": store.created_at,
             "updated_at": store.updated_at
         }
+    
+    @staticmethod
+    def delete_store(db: Session, store_id: str, user) -> None:
+        """
+        删除门店
+
+        Args:
+            db: 数据库会话
+            store_id: 门店ID
+            user: 当前用户
+
+        Raises:
+            NotFoundError: 门店不存在
+        """
+        # 获取门店
+        store = db.query(Store).filter(Store.id == store_id).first()
+        if not store:
+            raise NotFoundError("门店不存在")
+
+        # 删除门店
+        db.delete(store)
+        db.commit()

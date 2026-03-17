@@ -109,3 +109,20 @@ async def update_store(
     """
     store = StoreService.update_store(db, store_id, payload, user)
     return StoreResponse(**store)
+
+
+@store_router.delete('/{store_id}', status_code=204)
+async def delete_store(
+        store_id: str,
+        user: User = Depends(require_role('system_admin', mode='eq')),
+        db: Session = Depends(get_db)
+):
+    """
+    删除门店接口
+
+    Args:
+        store_id: 门店ID
+        user: 当前用户
+        db: 数据库会话
+    """
+    StoreService.delete_store(db, store_id, user)
