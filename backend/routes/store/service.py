@@ -48,3 +48,18 @@ class StoreService:
             "created_at": store.created_at,
             "updated_at": store.updated_at
         }
+    
+    @staticmethod
+    def get_stores(db: Session, params: Params) -> Page[Store]:
+        """
+        获取门店列表
+
+        Args:
+            db: 数据库会话
+            params: 分页参数
+
+        Returns:
+            门店列表（分页）
+        """
+        query = db.query(Store).order_by(Store.created_at.desc())
+        return sqlalchemy_paginate(query, params=params)

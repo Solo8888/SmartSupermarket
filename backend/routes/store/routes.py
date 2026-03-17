@@ -7,8 +7,9 @@ from models import get_db, User
 from core.permitions import require_role
 from .schemas import StoreCreate, StoreResponse
 from .service import StoreService
+from fastapi_pagination import Page, Params
 
-store_router = APIRouter(prefix='/stores', tags=['stores'])
+store_router = APIRouter(prefix='/stores', tags=['门店路由'])
 
 
 @store_router.post('/', response_model=StoreResponse)
@@ -30,3 +31,21 @@ async def create_store(
     """
     store = StoreService.create_store(db, payload, user)
     return StoreResponse(**store)
+
+
+@store_router.get('/', response_model=Page[StoreResponse])
+async def get_stores(
+        params: Params = Depends(),
+        db: Session = Depends(get_db)
+):
+    """
+    获取门店列表接口（分页）
+
+    Args:
+        params: 分页参数
+        db: 数据库会话
+
+    Returns:
+        门店列表（分页）
+    """
+    return StoreService.get_stores(db, params)
