@@ -36,7 +36,7 @@ async def get_inventories(
 
 @inventory_router.get('/{product_id}', response_model=InventoryResponse)
 async def get_inventory(
-        product_id: int,
+        product_id: str,
         db: Session = Depends(get_db)
 ):
     """
@@ -55,7 +55,7 @@ async def get_inventory(
 
 @inventory_router.put('/{product_id}', response_model=InventoryResponse)
 async def update_inventory(
-        product_id: int,
+        product_id: str,
         payload: InventoryUpdate,
         user: User = Depends(require_role('inventory_manager')),
         db: Session = Depends(get_db)
@@ -78,7 +78,7 @@ async def update_inventory(
 
 @inventory_router.post('/stock-in/{product_id}', response_model=InventoryResponse)
 async def stock_in(
-        product_id: int,
+        product_id: str,
         payload: StockInRequest,
         user: User = Depends(require_role('inventory_manager')),
         db: Session = Depends(get_db)
@@ -101,7 +101,7 @@ async def stock_in(
 
 @inventory_router.post('/stock-out/{product_id}', response_model=InventoryResponse)
 async def stock_out(
-        product_id: int,
+        product_id: str,
         payload: StockOutRequest,
         user: User = Depends(require_role('inventory_manager')),
         db: Session = Depends(get_db)

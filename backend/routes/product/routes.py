@@ -72,7 +72,7 @@ async def get_all_products(
 
 @product_router.get('/{product_id}', response_model=ProductResponse)
 async def get_product(
-        product_id: int,
+        product_id: str,
         db: Session = Depends(get_db)
 ):
     """
@@ -91,7 +91,7 @@ async def get_product(
 
 @product_router.put('/{product_id}', response_model=ProductResponse)
 async def update_product(
-        product_id: int,
+        product_id: str,
         payload: ProductUpdate,
         user: User = Depends(require_role('inventory_manager')),
         db: Session = Depends(get_db)
@@ -114,7 +114,7 @@ async def update_product(
 
 @product_router.delete('/{product_id}', status_code=204)
 async def delete_product(
-        product_id: int,
+        product_id: str,
         user: User = Depends(require_role('inventory_manager')),
         db: Session = Depends(get_db)
 ):

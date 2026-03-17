@@ -4,6 +4,7 @@ import * as productApi from '../../api/product'
 import * as categoryApi from '../../api/category'
 import * as uploadApi from '../../api/upload'
 import CategoryCascader from '../../components/CategoryCascader.vue'
+import { ElDialog } from 'element-plus'
 
 const products = ref([])
 const categories = ref([])
@@ -43,8 +44,8 @@ const fetchProducts = async () => {
       params.search = searchQuery.value
     }
     const response = await productApi.getProducts(params)
-    products.value = response.data.items || []
-    total.value = response.data.total || 0
+    products.value = response.items || []
+    total.value = response.total || 0
   } catch (err) {
     console.error('获取商品失败:', err)
   } finally {
@@ -66,7 +67,7 @@ const clearSearch = () => {
 const fetchCategories = async () => {
   try {
     const response = await categoryApi.getAllCategories()
-    categories.value = response.data || []
+    categories.value = response || []
   } catch (err) {
     console.error('获取分类失败:', err)
   }
@@ -154,6 +155,28 @@ const clearImage = () => {
 
 const handleSubmit = async () => {
   try {
+    // 表单验证
+    if (!formData.value.name) {
+      alert('请输入商品名称')
+      return
+    }
+    if (!formData.value.category_id) {
+      alert('请选择商品分类')
+      return
+    }
+    if (!formData.value.barcode || !formData.value.barcode.trim()) {
+      alert('请输入商品条码')
+      return
+    }
+    if (formData.value.price <= 0) {
+      alert('请输入有效的售价')
+      return
+    }
+    if (formData.value.purchase_price <= 0) {
+      alert('请输入有效的进货价格')
+      return
+    }
+    
     if (imageFile.value && !formData.value.image_url) {
       await handleImageUpload()
     }
@@ -313,126 +336,127 @@ onMounted(() => {
       </div>
     </div>
     
-    <div v-if="showModal" class="modal-overlay" @click.self="showModal = false">
-      <div class="modal">
-        <div class="modal-header">
-          <h4>{{ isEdit ? '编辑商品' : '添加商品' }}</h4>
-          <button class="close-btn" @click="showModal = false">×</button>
-        </div>
-        <div class="modal-body">
-          <div class="form-row">
-            <div class="form-group">
-              <label>商品名称 *</label>
-              <input v-model="formData.name" type="text" placeholder="请输入商品名称" />
-            </div>
-            <div class="form-group">
-              <label>条码</label>
-              <input v-model="formData.barcode" type="text" placeholder="请输入商品条码" />
-            </div>
+    <ElDialog
+      v-model="showModal"
+      :title="isEdit ? '编辑商品' : '添加商品'"
+      width="640px"
+      center
+    >
+      <div class="modal-body">
+        <div class="form-row">
+          <div class="form-group">
+            <label>商品名称 <span class="required">*</span></label>
+            <input v-model="formData.name" type="text" placeholder="请输入商品名称" />
           </div>
-          
-          <div class="form-row">
-            <div class="form-group">
-              <label>分类 *</label>
-              <CategoryCascader 
-                v-model="formData.category_id" 
-                :categories="categories"
-                placeholder="请选择分类"
+          <div class="form-group">
+            <label>条码 <span class="required">*</span></label>
+            <input v-model="formData.barcode" type="text" placeholder="请输入商品条码" />
+          </div>
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label>分类 <span class="required">*</span></label>
+            <CategoryCascader 
+              v-model="formData.category_id" 
+              :categories="categories"
+              placeholder="请选择分类"
+            />
+          </div>
+          <div class="form-group">
+            <label>品牌</label>
+            <input v-model="formData.brand" type="text" placeholder="请输入品牌" />
+          </div>
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label>售价 <span class="required">*</span></label>
+            <input v-model.number="formData.price" type="number" step="0.01" placeholder="请输入售价" />
+          </div>
+          <div class="form-group">
+            <label>进货价格 <span class="required">*</span></label>
+            <input v-model.number="formData.purchase_price" type="number" step="0.01" placeholder="请输入进货价格" />
+          </div>
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label>原价</label>
+            <input v-model.number="formData.original_price" type="number" step="0.01" placeholder="请输入原价" />
+          </div>
+          <div class="form-group">
+            <label>产地</label>
+            <input v-model="formData.origin" type="text" placeholder="请输入产地" />
+          </div>
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label>保质期（天）</label>
+            <input v-model.number="formData.shelf_life" type="number" min="0" placeholder="请输入保质期" />
+          </div>
+          <div class="form-group">
+            <label>品牌</label>
+            <input v-model="formData.brand" type="text" placeholder="请输入品牌" />
+          </div>
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label>单位</label>
+            <input v-model="formData.unit" type="text" placeholder="请输入单位" />
+          </div>
+          <div class="form-group">
+            <label>状态</label>
+            <select v-model="formData.status">
+              <option value="active">启用</option>
+              <option value="inactive">禁用</option>
+              <option value="out_of_stock">缺货</option>
+            </select>
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label>商品图片</label>
+          <div class="image-upload-area">
+            <div v-if="imagePreview" class="image-preview">
+              <img :src="imagePreview" alt="预览" />
+              <button type="button" class="clear-image-btn" @click="clearImage">×</button>
+            </div>
+            <div v-else class="image-placeholder">
+              <input 
+                type="file" 
+                accept="image/*" 
+                @change="handleImageChange"
+                ref="fileInput"
+                style="display: none"
               />
+              <button type="button" class="btn btn-secondary" @click="$refs.fileInput.click()">
+                选择图片
+              </button>
             </div>
-            <div class="form-group">
-              <label>品牌</label>
-              <input v-model="formData.brand" type="text" placeholder="请输入品牌" />
+            <div v-if="imageFile && !formData.image_url" class="upload-status">
+              <span v-if="uploading" class="uploading-text">上传中...</span>
+              <span v-else class="upload-hint">已选择图片，点击创建/保存时自动上传</span>
             </div>
-          </div>
-          
-          <div class="form-row">
-            <div class="form-group">
-              <label>售价 *</label>
-              <input v-model.number="formData.price" type="number" step="0.01" placeholder="请输入售价" />
-            </div>
-            <div class="form-group">
-              <label>进货价格 *</label>
-              <input v-model.number="formData.purchase_price" type="number" step="0.01" placeholder="请输入进货价格" />
-            </div>
-          </div>
-          
-          <div class="form-row">
-            <div class="form-group">
-              <label>原价</label>
-              <input v-model.number="formData.original_price" type="number" step="0.01" placeholder="请输入原价" />
-            </div>
-            <div class="form-group">
-              <label>产地</label>
-              <input v-model="formData.origin" type="text" placeholder="请输入产地" />
-            </div>
-          </div>
-          
-          <div class="form-row">
-            <div class="form-group">
-              <label>保质期（天）</label>
-              <input v-model.number="formData.shelf_life" type="number" min="0" placeholder="请输入保质期" />
-            </div>
-            <div class="form-group">
-              <label>品牌</label>
-              <input v-model="formData.brand" type="text" placeholder="请输入品牌" />
-            </div>
-          </div>
-          
-          <div class="form-row">
-            <div class="form-group">
-              <label>单位</label>
-              <input v-model="formData.unit" type="text" placeholder="请输入单位" />
-            </div>
-            <div class="form-group">
-              <label>状态</label>
-              <select v-model="formData.status">
-                <option value="active">启用</option>
-                <option value="inactive">禁用</option>
-                <option value="out_of_stock">缺货</option>
-              </select>
-            </div>
-          </div>
-          
-          <div class="form-group">
-            <label>商品图片</label>
-            <div class="image-upload-area">
-              <div v-if="imagePreview" class="image-preview">
-                <img :src="imagePreview" alt="预览" />
-                <button type="button" class="clear-image-btn" @click="clearImage">×</button>
-              </div>
-              <div v-else class="image-placeholder">
-                <input 
-                  type="file" 
-                  accept="image/*" 
-                  @change="handleImageChange"
-                  ref="fileInput"
-                  style="display: none"
-                />
-                <button type="button" class="btn btn-secondary" @click="$refs.fileInput.click()">
-                  选择图片
-                </button>
-              </div>
-              <div v-if="imageFile && !formData.image_url" class="upload-status">
-                <span v-if="uploading" class="uploading-text">上传中...</span>
-                <span v-else class="upload-hint">已选择图片，点击创建/保存时自动上传</span>
-              </div>
-            </div>
-          </div>
-          
-          <div class="form-group">
-            <label>描述</label>
-            <textarea v-model="formData.description" placeholder="请输入商品描述"></textarea>
           </div>
         </div>
-        <div class="modal-footer">
+        
+        <div class="form-group">
+          <label>描述</label>
+          <textarea v-model="formData.description" placeholder="请输入商品描述"></textarea>
+        </div>
+      </div>
+      <template #footer>
+        <div class="dialog-footer">
           <button class="btn btn-secondary" @click="showModal = false">取消</button>
           <button class="btn btn-primary" @click="handleSubmit">
             {{ isEdit ? '保存' : '创建' }}
           </button>
         </div>
-      </div>
-    </div>
+      </template>
+    </ElDialog>
   </div>
 </template>
 
@@ -663,60 +687,6 @@ onMounted(() => {
   background-color: #fecaca;
 }
 
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
-.modal {
-  background: white;
-  border-radius: 12px;
-  width: 100%;
-  max-width: 640px;
-  max-height: 90vh;
-  overflow: auto;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-}
-
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 20px 24px;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.modal-header h4 {
-  margin: 0;
-  color: #1f2937;
-  font-size: 18px;
-}
-
-.close-btn {
-  background: none;
-  border: none;
-  font-size: 24px;
-  color: #9ca3af;
-  cursor: pointer;
-  line-height: 1;
-}
-
-.close-btn:hover {
-  color: #6b7280;
-}
-
-.modal-body {
-  padding: 24px;
-}
-
 .form-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -733,6 +703,11 @@ onMounted(() => {
   color: #374151;
   font-weight: 500;
   font-size: 14px;
+}
+
+.form-group label .required {
+  color: #ef4444;
+  margin-left: 4px;
 }
 
 .form-group input,
@@ -828,7 +803,7 @@ onMounted(() => {
   color: #6b7280;
 }
 
-.modal-footer {
+.dialog-footer {
   display: flex;
   justify-content: flex-end;
   gap: 12px;

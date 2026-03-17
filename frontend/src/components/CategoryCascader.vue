@@ -7,7 +7,7 @@ const props = defineProps({
     required: true
   },
   modelValue: {
-    type: Number,
+    type: [String, Number],
     default: null
   },
   placeholder: {
@@ -38,7 +38,7 @@ const buildTree = (flatList) => {
   })
   
   const sortChildren = (nodes) => {
-    nodes.sort((a, b) => a.sort_order - b.sort_order)
+    nodes.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
     nodes.forEach(node => {
       if (node.children && node.children.length > 0) {
         sortChildren(node.children)
@@ -57,7 +57,7 @@ const treeCategories = computed(() => {
 const findPathById = (id, nodes, path = []) => {
   for (const node of nodes) {
     const newPath = [...path, node]
-    if (node.id === id) {
+    if (String(node.id) === String(id)) {
       return newPath
     }
     if (node.children && node.children.length > 0) {

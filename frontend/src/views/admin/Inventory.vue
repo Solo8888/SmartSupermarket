@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElDialog } from 'element-plus'
 import * as inventoryApi from '../../api/inventory'
 import * as productApi from '../../api/product'
 
@@ -57,7 +57,7 @@ const clearSearch = () => {
 const fetchProducts = async () => {
   try {
     const response = await productApi.getAllProducts()
-    products.value = response.items || []
+    products.value = response || []
   } catch (err) {
     console.error('获取商品失败:', err)
     ElMessage.error('获取商品失败，请稍后重试')
@@ -70,6 +70,14 @@ const getProductName = (productId) => {
   }
   const product = products.value.find(p => p.id === productId)
   return product ? product.name : `商品 #${productId}`
+}
+
+const getProductImage = (productId) => {
+  if (!products.value || products.value.length === 0) {
+    return ''
+  }
+  const product = products.value.find(p => p.id === productId)
+  return product ? product.image_url || '' : ''
 }
 
 const getStockStatus = (inventory) => {
@@ -191,7 +199,7 @@ onMounted(() => {
             <table class="inventory-table">
               <thead>
                 <tr>
-                  <th>商品ID</th>
+                  <th>商品图片</th>
                   <th>商品名称</th>
                   <th>库存数量</th>
                   <th>预警数量</th>
@@ -202,7 +210,12 @@ onMounted(() => {
               </thead>
               <tbody>
                 <tr v-for="inventory in inventories" :key="inventory.id">
-                  <td>{{ inventory.product_id }}</td>
+                  <td>
+                    <div class="product-image">
+                      <img v-if="getProductImage(inventory.product_id)" :src="getProductImage(inventory.product_id)" :alt="getProductName(inventory.product_id)" />
+                      <span v-else class="no-image">无图片</span>
+                    </div>
+                  </td>
                   <td class="product-name">{{ getProductName(inventory.product_id) }}</td>
                   <td class="stock-quantity">{{ inventory.stock_quantity }}</td>
                   <td>{{ inventory.warning_quantity }}</td>
@@ -253,45 +266,46 @@ onMounted(() => {
       </div>
     </div>
     
-    <div v-if="showModal" class="modal-overlay" @click.self="showModal = false">
-      <div class="modal">
-        <div class="modal-header">
-          <h4>{{ getModalTitle() }}</h4>
-          <button class="close-btn" @click="showModal = false">×</button>
+    <ElDialog
+      v-model="showModal"
+      :title="getModalTitle()"
+      width="480px"
+      center
+    >
+      <div class="modal-body">
+        <div class="product-info">
+          <p><strong>商品ID:</strong> {{ currentInventory?.product_id }}</p>
+          <p><strong>商品名称:</strong> {{ getProductName(currentInventory?.product_id) }}</p>
+          <p><strong>当前库存:</strong> {{ currentInventory?.stock_quantity }}</p>
         </div>
-        <div class="modal-body">
-          <div class="product-info">
-            <p><strong>商品ID:</strong> {{ currentInventory?.product_id }}</p>
-            <p><strong>商品名称:</strong> {{ getProductName(currentInventory?.product_id) }}</p>
-            <p><strong>当前库存:</strong> {{ currentInventory?.stock_quantity }}</p>
-          </div>
-          
-          <div v-if="modalType === 'update'" class="form-group">
-            <label>库存数量</label>
-            <input v-model.number="formData.stock_quantity" type="number" min="0" placeholder="请输入库存数量" />
-          </div>
-          
-          <div v-if="modalType === 'update'" class="form-group">
-            <label>预警数量</label>
-            <input v-model.number="formData.warning_quantity" type="number" min="0" placeholder="请输入预警数量" />
-          </div>
-          
-          <div v-if="modalType === 'stock-in' || modalType === 'stock-out'" class="form-group">
-            <label>数量</label>
-            <input v-model.number="stockFormData.quantity" type="number" min="1" placeholder="请输入数量" />
-          </div>
-          
-          <div v-if="modalType === 'stock-in' || modalType === 'stock-out'" class="form-group">
-            <label>备注</label>
-            <textarea v-model="stockFormData.remark" placeholder="请输入备注"></textarea>
-          </div>
+        
+        <div v-if="modalType === 'update'" class="form-group">
+          <label>库存数量</label>
+          <input v-model.number="formData.stock_quantity" type="number" min="0" placeholder="请输入库存数量" />
         </div>
-        <div class="modal-footer">
+        
+        <div v-if="modalType === 'update'" class="form-group">
+          <label>预警数量</label>
+          <input v-model.number="formData.warning_quantity" type="number" min="0" placeholder="请输入预警数量" />
+        </div>
+        
+        <div v-if="modalType === 'stock-in' || modalType === 'stock-out'" class="form-group">
+          <label>数量</label>
+          <input v-model.number="stockFormData.quantity" type="number" min="1" placeholder="请输入数量" />
+        </div>
+        
+        <div v-if="modalType === 'stock-in' || modalType === 'stock-out'" class="form-group">
+          <label>备注</label>
+          <textarea v-model="stockFormData.remark" placeholder="请输入备注"></textarea>
+        </div>
+      </div>
+      <template #footer>
+        <div class="dialog-footer">
           <button class="btn btn-secondary" @click="showModal = false">取消</button>
           <button class="btn btn-primary" @click="handleSubmit">确定</button>
         </div>
-      </div>
-    </div>
+      </template>
+    </ElDialog>
   </div>
 </template>
 
@@ -412,6 +426,29 @@ onMounted(() => {
   color: #1f2937;
 }
 
+.product-image {
+  width: 60px;
+  height: 60px;
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f9fafb;
+}
+
+.product-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.product-image .no-image {
+  color: #9ca3af;
+  font-size: 12px;
+  text-align: center;
+}
+
 .stock-quantity {
   font-weight: 600;
   font-size: 16px;
@@ -519,60 +556,6 @@ onMounted(() => {
   background-color: #fde68a;
 }
 
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
-.modal {
-  background: white;
-  border-radius: 12px;
-  width: 100%;
-  max-width: 480px;
-  max-height: 90vh;
-  overflow: auto;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-}
-
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 20px 24px;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.modal-header h4 {
-  margin: 0;
-  color: #1f2937;
-  font-size: 18px;
-}
-
-.close-btn {
-  background: none;
-  border: none;
-  font-size: 24px;
-  color: #9ca3af;
-  cursor: pointer;
-  line-height: 1;
-}
-
-.close-btn:hover {
-  color: #6b7280;
-}
-
-.modal-body {
-  padding: 24px;
-}
-
 .product-info {
   background: #f9fafb;
   padding: 16px;
@@ -621,12 +604,10 @@ onMounted(() => {
   resize: vertical;
 }
 
-.modal-footer {
+.dialog-footer {
   display: flex;
   justify-content: flex-end;
   gap: 12px;
-  padding: 16px 24px;
-  border-top: 1px solid #e5e7eb;
 }
 
 @media (max-width: 768px) {

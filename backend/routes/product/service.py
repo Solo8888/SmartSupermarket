@@ -32,21 +32,29 @@ class ProductService:
             raise ValueError("分类不存在")
 
         # 检查条码是否已存在
-        if payload.barcode:
+        if payload.barcode and payload.barcode.strip():
             existing_product = db.query(Product).filter(Product.barcode == payload.barcode).first()
             if existing_product:
                 raise ValueError("商品条码已存在")
+
+        # 获取用户关联的门店ID
+        from models.user_store import UserStore
+        user_store = db.query(UserStore).filter(UserStore.user_id == user.id).first()
+        if not user_store:
+            raise ValueError("用户未分配门店")
+        store_id = user_store.store_id
 
         # 创建新商品
         product = Product(
             name=payload.name,
             category_id=payload.category_id,
+            store_id=store_id,
             price=payload.price,
             original_price=payload.original_price,
             purchase_price=payload.purchase_price,
             description=payload.description,
             image_url=payload.image_url,
-            barcode=payload.barcode,
+            barcode=payload.barcode.strip() if payload.barcode and payload.barcode.strip() else None,
             brand=payload.brand,
             origin=payload.origin,
             shelf_life=payload.shelf_life,
@@ -58,11 +66,22 @@ class ProductService:
         db.commit()
         db.refresh(product)
 
+        # 自动创建库存记录，默认库存为0
+        from models.inventory import Inventory
+        inventory = Inventory(
+            product_id=product.id,
+            stock_quantity=0,
+            warning_quantity=10
+        )
+        db.add(inventory)
+        db.commit()
+
         # 转换为字典返回
         return {
             "id": product.id,
             "name": product.name,
             "category_id": product.category_id,
+            "store_id": product.store_id,
             "price": product.price,
             "original_price": product.original_price,
             "purchase_price": product.purchase_price,
@@ -122,6 +141,7 @@ class ProductService:
                 "id": product.id,
                 "name": product.name,
                 "category_id": product.category_id,
+                "store_id": product.store_id,
                 "price": product.price,
                 "original_price": product.original_price,
                 "purchase_price": product.purchase_price,
@@ -142,7 +162,7 @@ class ProductService:
         ]
 
     @staticmethod
-    def get_product(db: Session, product_id: int) -> dict:
+    def get_product(db: Session, product_id: str) -> dict:
         """
         获取单个商品详情
 
@@ -164,7 +184,7 @@ class ProductService:
             "id": product.id,
             "name": product.name,
             "category_id": product.category_id,
-
+            "store_id": product.store_id,
             "price": product.price,
             "original_price": product.original_price,
             "purchase_price": product.purchase_price,
@@ -183,7 +203,7 @@ class ProductService:
         }
 
     @staticmethod
-    def update_product(db: Session, product_id: int, payload: ProductUpdate, user) -> dict:
+    def update_product(db: Session, product_id: str, payload: ProductUpdate, user) -> dict:
         """
         更新商品
 
@@ -211,7 +231,7 @@ class ProductService:
                 raise ValueError("分类不存在")
 
         # 检查条码是否已存在（如果提供了barcode且不是当前商品的barcode）
-        if payload.barcode is not None:
+        if payload.barcode is not None and payload.barcode.strip():
             existing_product = db.query(Product).filter(Product.barcode == payload.barcode).filter(Product.id != product_id).first()
             if existing_product:
                 raise ValueError("商品条码已存在")
@@ -219,7 +239,12 @@ class ProductService:
         # 更新字段（只更新提供的字段）
         update_data = payload.model_dump(exclude_unset=True)
         for field, value in update_data.items():
-            setattr(product, field, value)
+            if field == 'barcode' and value and value.strip():
+                setattr(product, field, value.strip())
+            elif field == 'barcode' and (not value or not value.strip()):
+                setattr(product, field, None)
+            else:
+                setattr(product, field, value)
 
         # 更新时间戳
         product.updated_at = func.current_timestamp()
@@ -231,7 +256,7 @@ class ProductService:
             "id": product.id,
             "name": product.name,
             "category_id": product.category_id,
-
+            "store_id": product.store_id,
             "price": product.price,
             "original_price": product.original_price,
             "purchase_price": product.purchase_price,
@@ -250,7 +275,7 @@ class ProductService:
         }
 
     @staticmethod
-    def delete_product(db: Session, product_id: int, user) -> None:
+    def delete_product(db: Session, product_id: str, user) -> None:
         """
         删除商品
 

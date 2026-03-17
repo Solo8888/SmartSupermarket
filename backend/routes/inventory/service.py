@@ -40,7 +40,7 @@ class InventoryService:
         return sqlalchemy_paginate(query, params=params)
 
     @staticmethod
-    def get_inventory(db: Session, product_id: int) -> dict:
+    def get_inventory(db: Session, product_id: str) -> dict:
         """
         获取单个商品库存
 
@@ -69,7 +69,7 @@ class InventoryService:
         }
 
     @staticmethod
-    def update_inventory(db: Session, product_id: int, payload: InventoryUpdate, user) -> dict:
+    def update_inventory(db: Session, product_id: str, payload: InventoryUpdate, user) -> dict:
         """
         更新库存
 
@@ -110,7 +110,7 @@ class InventoryService:
         }
 
     @staticmethod
-    def stock_in(db: Session, product_id: int, payload: StockInRequest, user) -> dict:
+    def stock_in(db: Session, product_id: str, payload: StockInRequest, user) -> dict:
         """
         入库登记
 
@@ -158,7 +158,7 @@ class InventoryService:
         }
 
     @staticmethod
-    def stock_out(db: Session, product_id: int, payload: StockOutRequest, user) -> dict:
+    def stock_out(db: Session, product_id: str, payload: StockOutRequest, user) -> dict:
         """
         出库审核
 

@@ -181,7 +181,7 @@ onMounted(() => {
       width="480px"
     >
       <div class="form-group">
-        <label>分类名称</label>
+        <label>分类名称 <span class="required">*</span></label>
         <input v-model="formData.name" type="text" placeholder="请输入分类名称" />
       </div>
       <div class="form-group">
@@ -285,6 +285,11 @@ onMounted(() => {
   color: #374151;
   font-weight: 500;
   font-size: 14px;
+}
+
+.form-group label .required {
+  color: #ef4444;
+  margin-left: 4px;
 }
 
 .form-group input,

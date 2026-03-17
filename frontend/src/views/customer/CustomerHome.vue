@@ -44,7 +44,7 @@ const fetchProducts = async () => {
 const fetchCategories = async () => {
   try {
     const response = await categoryApi.getAllCategories()
-    categories.value = response.data || []
+    categories.value = response || []
   } catch (err) {
     console.error('获取分类失败:', err)
   }
