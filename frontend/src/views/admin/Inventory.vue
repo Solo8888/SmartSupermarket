@@ -1,5 +1,6 @@
 <script setup>
 import { ref, onMounted } from 'vue'
+import { ElMessage } from 'element-plus'
 import * as inventoryApi from '../../api/inventory'
 import * as productApi from '../../api/product'
 
@@ -32,10 +33,11 @@ const fetchInventories = async () => {
       params.search = searchQuery.value
     }
     const response = await inventoryApi.getInventories(params)
-    inventories.value = response.data || []
-    total.value = response.data.total || 0
+    inventories.value = response.items || []
+    total.value = response.total || 0
   } catch (err) {
     console.error('获取库存失败:', err)
+    ElMessage.error('获取库存失败，请稍后重试')
   } finally {
     loading.value = false
   }
@@ -55,9 +57,10 @@ const clearSearch = () => {
 const fetchProducts = async () => {
   try {
     const response = await productApi.getAllProducts()
-    products.value = response.data || []
+    products.value = response.items || []
   } catch (err) {
     console.error('获取商品失败:', err)
+    ElMessage.error('获取商品失败，请稍后重试')
   }
 }
 
@@ -121,15 +124,19 @@ const handleSubmit = async () => {
   try {
     if (modalType.value === 'update') {
       await inventoryApi.updateInventory(currentInventory.value.product_id, formData.value)
+      ElMessage.success('更新库存成功')
     } else if (modalType.value === 'stock-in') {
       await inventoryApi.stockIn(currentInventory.value.product_id, stockFormData.value)
+      ElMessage.success('入库登记成功')
     } else if (modalType.value === 'stock-out') {
       await inventoryApi.stockOut(currentInventory.value.product_id, stockFormData.value)
+      ElMessage.success('出库审核成功')
     }
     showModal.value = false
     fetchInventories()
   } catch (err) {
     console.error('操作失败:', err)
+    ElMessage.error(err.response?.data?.message || '操作失败，请稍后重试')
   }
 }
 

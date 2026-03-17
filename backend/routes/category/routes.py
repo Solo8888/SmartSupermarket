@@ -71,7 +71,7 @@ async def get_all_categories(
 
 @category_router.get('/{category_id}', response_model=CategoryResponse)
 async def get_category(
-        category_id: int,
+        category_id: str,
         db: Session = Depends(get_db)
 ):
     """
@@ -90,7 +90,7 @@ async def get_category(
 
 @category_router.put('/{category_id}', response_model=CategoryResponse)
 async def update_category(
-        category_id: int,
+        category_id: str,
         payload: CategoryUpdate,
         user: User = Depends(require_role('inventory_manager')),
         db: Session = Depends(get_db)
@@ -113,7 +113,7 @@ async def update_category(
 
 @category_router.delete('/{category_id}', status_code=204)
 async def delete_category(
-        category_id: int,
+        category_id: str,
         user: User = Depends(require_role('inventory_manager')),
         db: Session = Depends(get_db)
 ):

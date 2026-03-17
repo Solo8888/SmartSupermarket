@@ -3,6 +3,7 @@
 
 from sqlalchemy.orm import Session
 from models.category import Category
+from models.user_store import UserStore
 from .schemas import CategoryCreate, CategoryUpdate
 from fastapi_pagination import Page, Params
 from fastapi_pagination.ext.sqlalchemy import paginate as sqlalchemy_paginate
@@ -30,10 +31,17 @@ class CategoryService:
             if not parent_category:
                 raise ValueError("父分类不存在")
 
+        # 获取用户关联的门店ID
+        user_store = db.query(UserStore).filter(UserStore.user_id == user.id).first()
+        if not user_store:
+            raise ValueError("用户未分配门店")
+        store_id = user_store.store_id
+
         # 创建新商品类别
         category = Category(
             name=payload.name,
             parent_id=payload.parent_id,
+            store_id=store_id,
             description=payload.description,
             sort_order=payload.sort_order
         )
@@ -47,6 +55,7 @@ class CategoryService:
             "id": category.id,
             "name": category.name,
             "parent_id": category.parent_id,
+            "store_id": category.store_id,
             "description": category.description,
             "sort_order": category.sort_order,
             "created_at": category.created_at,
@@ -85,6 +94,7 @@ class CategoryService:
                 "id": cat.id,
                 "name": cat.name,
                 "parent_id": cat.parent_id,
+                "store_id": cat.store_id,
                 "description": cat.description,
                 "sort_order": cat.sort_order,
                 "created_at": cat.created_at,
@@ -94,7 +104,7 @@ class CategoryService:
         ]
 
     @staticmethod
-    def get_category(db: Session, category_id: int) -> dict:
+    def get_category(db: Session, category_id: str) -> dict:
         """
         获取单个商品类别详情
 
@@ -116,7 +126,7 @@ class CategoryService:
             "id": category.id,
             "name": category.name,
             "parent_id": category.parent_id,
-
+            "store_id": category.store_id,
             "description": category.description,
             "sort_order": category.sort_order,
             "created_at": category.created_at,
@@ -124,7 +134,7 @@ class CategoryService:
         }
 
     @staticmethod
-    def update_category(db: Session, category_id: int, payload: CategoryUpdate, user) -> dict:
+    def update_category(db: Session, category_id: str, payload: CategoryUpdate, user) -> dict:
         """
         更新商品类别
 
@@ -166,7 +176,7 @@ class CategoryService:
             "id": category.id,
             "name": category.name,
             "parent_id": category.parent_id,
-
+            "store_id": category.store_id,
             "description": category.description,
             "sort_order": category.sort_order,
             "created_at": category.created_at,
@@ -174,7 +184,7 @@ class CategoryService:
         }
 
     @staticmethod
-    def delete_category(db: Session, category_id: int, user) -> None:
+    def delete_category(db: Session, category_id: str, user) -> None:
         """
         删除商品类别
 

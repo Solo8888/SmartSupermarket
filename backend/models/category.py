@@ -13,6 +13,7 @@ class Category(Base):
     id = Column(CHAR(36), primary_key=True, default=lambda: str(uuid.uuid4()), comment='分类ID')
     name = Column(String(50), nullable=False, comment='分类名称')
     parent_id = Column(CHAR(36), ForeignKey('categories.id', ondelete='SET NULL'), nullable=True, comment='父分类ID')
+    store_id = Column(CHAR(36), ForeignKey('stores.id', ondelete='SET NULL'), nullable=False, comment='门店ID')
     description = Column(Text, nullable=True, comment='分类描述')
     sort_order = Column(Integer, default=0, nullable=False, comment='排序顺序')
     created_at = Column(DateTime, default=func.current_timestamp(), nullable=False, comment='创建时间')

@@ -30,11 +30,8 @@ const props = defineProps({
       </span>
       <span class="expand-placeholder" v-else></span>
       <span class="node-name">{{ node.name }}</span>
-      <span class="node-status" :class="node.status">
-        {{ node.status === 'active' ? '启用' : '禁用' }}
-      </span>
       <div class="node-actions">
-        <button class="btn-sm btn-primary" @click="openCreateModal(node.id, node.level)">
+        <button class="btn-sm btn-primary" @click="openCreateModal(node.id)">
           添加子分类
         </button>
         <button class="btn-sm btn-secondary" @click="openEditModal(node)">
@@ -97,23 +94,6 @@ const props = defineProps({
   flex: 1;
   font-weight: 500;
   color: #374151;
-}
-
-.node-status {
-  padding: 4px 12px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 500;
-}
-
-.node-status.active {
-  background-color: #d1fae5;
-  color: #065f46;
-}
-
-.node-status.inactive {
-  background-color: #fee2e2;
-  color: #991b1b;
 }
 
 .node-actions {

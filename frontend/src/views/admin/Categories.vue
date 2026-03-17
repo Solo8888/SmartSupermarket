@@ -1,5 +1,6 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
+import { ElMessage, ElDialog } from 'element-plus'
 import * as categoryApi from '../../api/category'
 import TreeNode from '../../components/TreeNode.vue'
 
@@ -54,7 +55,7 @@ const fetchCategories = async () => {
   loading.value = true
   try {
     const response = await categoryApi.getAllCategories()
-    categories.value = response.data || []
+    categories.value = response || []
   } catch (err) {
     console.error('获取分类失败:', err)
   } finally {
@@ -105,13 +106,16 @@ const handleSubmit = async () => {
   try {
     if (isEdit.value) {
       await categoryApi.updateCategory(currentCategory.value.id, formData.value)
+      ElMessage.success('编辑分类成功')
     } else {
       await categoryApi.createCategory(formData.value)
+      ElMessage.success('添加分类成功')
     }
     showModal.value = false
     fetchCategories()
   } catch (err) {
     console.error('操作失败:', err)
+    ElMessage.error(err.response?.data?.message || '操作失败，请稍后重试')
   }
 }
 
@@ -121,9 +125,11 @@ const handleDelete = async (category) => {
   }
   try {
     await categoryApi.deleteCategory(category.id)
+    ElMessage.success('删除分类成功')
     fetchCategories()
   } catch (err) {
     console.error('删除失败:', err)
+    ElMessage.error(err.response?.data?.message || '删除失败，请稍后重试')
   }
 }
 
@@ -169,34 +175,32 @@ onMounted(() => {
       </div>
     </div>
     
-    <div v-if="showModal" class="modal-overlay" @click.self="showModal = false">
-      <div class="modal">
-        <div class="modal-header">
-          <h4>{{ isEdit ? '编辑分类' : '添加分类' }}</h4>
-          <button class="close-btn" @click="showModal = false">×</button>
-        </div>
-        <div class="modal-body">
-          <div class="form-group">
-            <label>分类名称</label>
-            <input v-model="formData.name" type="text" placeholder="请输入分类名称" />
-          </div>
-          <div class="form-group">
-            <label>描述</label>
-            <textarea v-model="formData.description" placeholder="请输入分类描述"></textarea>
-          </div>
-          <div class="form-group">
-            <label>排序</label>
-            <input v-model.number="formData.sort_order" type="number" placeholder="数字越小越靠前" />
-          </div>
-        </div>
-        <div class="modal-footer">
+    <ElDialog
+      v-model="showModal"
+      :title="isEdit ? '编辑分类' : '添加分类'"
+      width="480px"
+    >
+      <div class="form-group">
+        <label>分类名称</label>
+        <input v-model="formData.name" type="text" placeholder="请输入分类名称" />
+      </div>
+      <div class="form-group">
+        <label>描述</label>
+        <textarea v-model="formData.description" placeholder="请输入分类描述"></textarea>
+      </div>
+      <div class="form-group">
+        <label>排序</label>
+        <input v-model.number="formData.sort_order" type="number" placeholder="数字越小越靠前" />
+      </div>
+      <template #footer>
+        <span class="dialog-footer">
           <button class="btn btn-secondary" @click="showModal = false">取消</button>
           <button class="btn btn-primary" @click="handleSubmit">
             {{ isEdit ? '保存' : '创建' }}
           </button>
-        </div>
-      </div>
-    </div>
+        </span>
+      </template>
+    </ElDialog>
   </div>
 </template>
 
@@ -271,60 +275,6 @@ onMounted(() => {
   background-color: #e5e7eb;
 }
 
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
-.modal {
-  background: white;
-  border-radius: 12px;
-  width: 100%;
-  max-width: 480px;
-  max-height: 90vh;
-  overflow: auto;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-}
-
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 20px 24px;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.modal-header h4 {
-  margin: 0;
-  color: #1f2937;
-  font-size: 18px;
-}
-
-.close-btn {
-  background: none;
-  border: none;
-  font-size: 24px;
-  color: #9ca3af;
-  cursor: pointer;
-  line-height: 1;
-}
-
-.close-btn:hover {
-  color: #6b7280;
-}
-
-.modal-body {
-  padding: 24px;
-}
-
 .form-group {
   margin-bottom: 20px;
 }
@@ -361,12 +311,10 @@ onMounted(() => {
   resize: vertical;
 }
 
-.modal-footer {
+.dialog-footer {
   display: flex;
   justify-content: flex-end;
   gap: 12px;
-  padding: 16px 24px;
-  border-top: 1px solid #e5e7eb;
 }
 
 @media (max-width: 768px) {
@@ -374,17 +322,6 @@ onMounted(() => {
     flex-direction: column;
     gap: 12px;
     align-items: flex-start;
-  }
-  
-  .modal {
-    margin: 16px;
-    border-radius: 8px;
-  }
-  
-  .modal-header,
-  .modal-body,
-  .modal-footer {
-    padding: 16px;
   }
 }
 </style>
