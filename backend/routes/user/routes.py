@@ -28,3 +28,26 @@ async def get_user_list(
     """
     result = UserService.get_user_list(db, user)
     return UserListResponse(**result)
+
+
+@user_router.put('/{user_id}/role', response_model=UserResponse)
+async def update_user_role(
+        user_id: str,
+        payload: UserUpdateRole,
+        user: User = Depends(require_role('system_admin', mode='eq')),
+        db: Session = Depends(get_db)
+):
+    """
+    更新用户角色接口
+
+    Args:
+        user_id: 用户ID
+        payload: 更新用户角色请求体
+        user: 当前用户
+        db: 数据库会话
+
+    Returns:
+        更新后的用户信息
+    """
+    result = UserService.update_user_role(db, user_id, payload, user)
+    return UserResponse(**result)
