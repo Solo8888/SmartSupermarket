@@ -3,7 +3,7 @@
 
 from sqlalchemy.orm import Session
 from models.store import Store
-from .schemas import StoreCreate
+from .schemas import StoreCreate, StoreUpdate
 from fastapi_pagination import Page, Params
 from fastapi_pagination.ext.sqlalchemy import paginate as sqlalchemy_paginate
 from core.exceptions import NotFoundError
@@ -108,6 +108,50 @@ class StoreService:
         store = db.query(Store).filter(Store.id == store_id).first()
         if not store:
             raise NotFoundError("门店不存在")
+
+        return {
+            "id": store.id,
+            "name": store.name,
+            "address": store.address,
+            "phone": store.phone,
+            "opening_hours": store.opening_hours,
+            "status": store.status,
+            "created_at": store.created_at,
+            "updated_at": store.updated_at
+        }
+    
+    @staticmethod
+    def update_store(db: Session, store_id: str, payload: StoreUpdate, user) -> dict:
+        """
+        更新门店
+
+        Args:
+            db: 数据库会话
+            store_id: 门店ID
+            payload: 更新门店请求体
+            user: 当前用户
+
+        Returns:
+            更新成功的门店信息
+
+        Raises:
+            NotFoundError: 门店不存在
+        """
+        # 获取门店
+        store = db.query(Store).filter(Store.id == store_id).first()
+        if not store:
+            raise NotFoundError("门店不存在")
+
+        # 更新字段（只更新提供的字段）
+        update_data = payload.model_dump(exclude_unset=True)
+        for field, value in update_data.items():
+            setattr(store, field, value)
+
+        # 更新时间戳
+        store.updated_at = func.current_timestamp()
+
+        db.commit()
+        db.refresh(store)
 
         return {
             "id": store.id,

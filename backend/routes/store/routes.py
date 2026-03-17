@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from models import get_db, User
 from core.permitions import require_role
-from .schemas import StoreCreate, StoreResponse
+from .schemas import StoreCreate, StoreUpdate, StoreResponse
 from .service import StoreService
 from fastapi_pagination import Page, Params
 from typing import List
@@ -85,4 +85,27 @@ async def get_store(
         门店详情
     """
     store = StoreService.get_store(db, store_id)
+    return StoreResponse(**store)
+
+
+@store_router.put('/{store_id}', response_model=StoreResponse)
+async def update_store(
+        store_id: str,
+        payload: StoreUpdate,
+        user: User = Depends(require_role('system_admin', mode='eq')),
+        db: Session = Depends(get_db)
+):
+    """
+    更新门店接口
+
+    Args:
+        store_id: 门店ID
+        payload: 更新门店请求体
+        user: 当前用户
+        db: 数据库会话
+
+    Returns:
+        更新成功的门店信息
+    """
+    store = StoreService.update_store(db, store_id, payload, user)
     return StoreResponse(**store)
