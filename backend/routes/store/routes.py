@@ -8,6 +8,7 @@ from core.permitions import require_role
 from .schemas import StoreCreate, StoreResponse
 from .service import StoreService
 from fastapi_pagination import Page, Params
+from typing import List
 
 store_router = APIRouter(prefix='/stores', tags=['门店路由'])
 
@@ -49,3 +50,20 @@ async def get_stores(
         门店列表（分页）
     """
     return StoreService.get_stores(db, params)
+
+
+@store_router.get('/all', response_model=List[StoreResponse])
+async def get_all_stores(
+        db: Session = Depends(get_db)
+):
+    """
+    获取所有门店接口（不分页）
+
+    Args:
+        db: 数据库会话
+
+    Returns:
+        所有门店列表
+    """
+    stores = StoreService.get_all_stores(db)
+    return [StoreResponse(**store) for store in stores]

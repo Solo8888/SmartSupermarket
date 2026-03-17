@@ -97,6 +97,7 @@ redis_data/
 venv/
 env/
 ENV/
+test/
 
 # Python字节码
 __pycache__/
@@ -148,6 +149,7 @@ logs
 # 编辑器目录
 .vscode/
 .idea/
+.trae/
 *.swp
 *.swo
 

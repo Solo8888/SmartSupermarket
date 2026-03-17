@@ -63,3 +63,29 @@ class StoreService:
         """
         query = db.query(Store).order_by(Store.created_at.desc())
         return sqlalchemy_paginate(query, params=params)
+    
+    @staticmethod
+    def get_all_stores(db: Session) -> list:
+        """
+        获取所有门店（不分页）
+
+        Args:
+            db: 数据库会话
+
+        Returns:
+            所有门店列表
+        """
+        stores = db.query(Store).order_by(Store.created_at.desc()).all()
+        return [
+            {
+                "id": store.id,
+                "name": store.name,
+                "address": store.address,
+                "phone": store.phone,
+                "opening_hours": store.opening_hours,
+                "status": store.status,
+                "created_at": store.created_at,
+                "updated_at": store.updated_at
+            }
+            for store in stores
+        ]
