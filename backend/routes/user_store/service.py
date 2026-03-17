@@ -100,3 +100,41 @@ class UserStoreService:
             }
             for allocation in allocations
         ]
+    
+    @staticmethod
+    def get_store_users(db: Session, store_id: str, current_user) -> list:
+        """
+        获取门店的管理员列表
+
+        Args:
+            db: 数据库会话
+            store_id: 门店ID
+            current_user: 当前用户
+
+        Returns:
+            门店的管理员列表
+
+        Raises:
+            NotFoundError: 门店不存在
+        """
+        # 检查门店是否存在
+        existing_store = db.query(Store).filter(Store.id == store_id).first()
+        if not existing_store:
+            raise NotFoundError("门店不存在")
+
+        # 查询门店的用户分配
+        allocations = db.query(UserStore, User.username.label('username'), User.role.label('role')).join(
+            User, UserStore.user_id == User.id
+        ).filter(UserStore.store_id == store_id).all()
+
+        # 转换为字典列表返回
+        return [
+            {
+                "id": allocation.UserStore.id,
+                "user_id": allocation.UserStore.user_id,
+                "username": allocation.username,
+                "role": allocation.role,
+                "created_at": allocation.UserStore.created_at
+            }
+            for allocation in allocations
+        ]

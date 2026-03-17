@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from models import get_db, User
 from core.permitions import require_role
-from .schemas import StoreAllocationCreate, StoreAllocationResponse, UserStoreListResponse
+from .schemas import StoreAllocationCreate, StoreAllocationResponse, UserStoreListResponse, StoreUserListResponse
 from .service import UserStoreService
 
 user_store_router = APIRouter(prefix='/user-store', tags=['user-store'])
@@ -51,3 +51,24 @@ async def get_user_stores(
     """
     stores = UserStoreService.get_user_stores(db, user_id, user)
     return stores
+
+
+@user_store_router.get('/store/{store_id}', response_model=list[StoreUserListResponse])
+async def get_store_users(
+        store_id: str,
+        user: User = Depends(require_role('system_admin', mode='eq')),
+        db: Session = Depends(get_db)
+):
+    """
+    获取门店的管理员列表接口
+
+    Args:
+        store_id: 门店ID
+        user: 当前用户
+        db: 数据库会话
+
+    Returns:
+        门店的管理员列表
+    """
+    users = UserStoreService.get_store_users(db, store_id, user)
+    return users
