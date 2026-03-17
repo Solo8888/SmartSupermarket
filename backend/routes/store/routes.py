@@ -67,3 +67,22 @@ async def get_all_stores(
     """
     stores = StoreService.get_all_stores(db)
     return [StoreResponse(**store) for store in stores]
+
+
+@store_router.get('/{store_id}', response_model=StoreResponse)
+async def get_store(
+        store_id: str,
+        db: Session = Depends(get_db)
+):
+    """
+    获取单个门店详情接口
+
+    Args:
+        store_id: 门店ID
+        db: 数据库会话
+
+    Returns:
+        门店详情
+    """
+    store = StoreService.get_store(db, store_id)
+    return StoreResponse(**store)

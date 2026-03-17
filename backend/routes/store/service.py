@@ -89,3 +89,33 @@ class StoreService:
             }
             for store in stores
         ]
+    
+    @staticmethod
+    def get_store(db: Session, store_id: str) -> dict:
+        """
+        获取单个门店详情
+
+        Args:
+            db: 数据库会话
+            store_id: 门店ID
+
+        Returns:
+            门店详情
+
+        Raises:
+            NotFoundError: 门店不存在
+        """
+        store = db.query(Store).filter(Store.id == store_id).first()
+        if not store:
+            raise NotFoundError("门店不存在")
+
+        return {
+            "id": store.id,
+            "name": store.name,
+            "address": store.address,
+            "phone": store.phone,
+            "opening_hours": store.opening_hours,
+            "status": store.status,
+            "created_at": store.created_at,
+            "updated_at": store.updated_at
+        }
