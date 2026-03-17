@@ -3,7 +3,7 @@
 
 from sqlalchemy.orm import Session
 from models.user import User
-from core.auth import create_access_token
+from core.auth import JWTHandler
 from passlib.context import CryptContext
 from fastapi import HTTPException, status
 from typing import Dict, Any, List, Optional
@@ -44,14 +44,14 @@ class AuthService:
             )
         
         # 检查用户是否激活
-        if not user.is_active:
+        if user.status != 'active':
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="用户账号已被禁用",
             )
         
         # 创建访问令牌
-        access_token = create_access_token(data={"sub": str(user.id)})
+        access_token = JWTHandler.generate_token(str(user.id))
         
         return {
             "access_token": access_token,
@@ -78,7 +78,7 @@ class AuthService:
             phone=phone,
             password=hashed_password,
             role=role,
-            is_active=True
+            status='active'
         )
         
         db.add(new_user)
@@ -142,7 +142,7 @@ class UserService:
                 "username": user.username,
                 "phone": user.phone,
                 "role": user.role,
-                "is_active": user.is_active,
+                "is_active": user.status == 'active',
                 "created_at": user.created_at
             })
         
@@ -181,6 +181,6 @@ class UserService:
             "username": user.username,
             "phone": user.phone,
             "role": user.role,
-            "is_active": user.is_active,
+            "is_active": user.status == 'active',
             "created_at": user.created_at
         }
