@@ -29,6 +29,7 @@ from .inventory import Inventory
 from .promotion import Promotion
 from .order import Order, OrderItem
 from .store import Store
+from .user_store import UserStore
 from .member_levels import MemberLevel
 from .member import Member
 from .coupon import Coupon
