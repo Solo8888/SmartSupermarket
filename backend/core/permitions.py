@@ -11,8 +11,9 @@ from core.logger import logger
 from models import User, get_db
 
 # 角色权重级别（用于权限判断）
-# admin > operations_manager = inventory_manager > customer
+# system_admin > admin > operations_manager = inventory_manager > customer
 ROLE_HIERARCHY = {
+    'system_admin': 4,
     'admin': 3,
     'operations_manager': 2,
     'inventory_manager': 2,

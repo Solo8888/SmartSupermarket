@@ -1,0 +1,32 @@
+# 门店API路由
+# 提供门店的增删改查接口
+
+from fastapi import APIRouter, Depends
+from sqlalchemy.orm import Session
+from models import get_db, User
+from core.permitions import require_role
+from .schemas import StoreCreate, StoreResponse
+from .service import StoreService
+
+store_router = APIRouter(prefix='/stores', tags=['stores'])
+
+
+@store_router.post('/', response_model=StoreResponse)
+async def create_store(
+        payload: StoreCreate,
+        user: User = Depends(require_role('system_admin', mode='eq')),
+        db: Session = Depends(get_db)
+):
+    """
+    创建门店接口
+
+    Args:
+        payload: 创建门店请求体
+        user: 当前用户
+        db: 数据库会话
+
+    Returns:
+        创建成功的门店信息
+    """
+    store = StoreService.create_store(db, payload, user)
+    return StoreResponse(**store)
