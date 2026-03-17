@@ -49,6 +49,11 @@ const menuItems = computed(() => {
         name: '用户管理',
         path: '/admin/users',
         icon: '👥'
+      },
+      {
+        name: '用户门店管理',
+        path: '/admin/user-stores',
+        icon: '🔗'
       }
     )
   }

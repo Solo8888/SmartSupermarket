@@ -65,6 +65,12 @@ const routes = [
         name: 'Users',
         component: () => import('../views/admin/Users.vue'),
         meta: { title: '用户管理', requiresRole: 'system_admin' }
+      },
+      {
+        path: 'user-stores',
+        name: 'UserStores',
+        component: () => import('../views/admin/UserStores.vue'),
+        meta: { title: '用户门店管理', requiresRole: 'system_admin' }
       }
     ]
   },
