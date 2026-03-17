@@ -128,3 +128,21 @@ async def delete_product(
     """
     ProductService.delete_product(db, product_id, user)
 
+
+@product_router.get('/category/{category_id}')
+async def get_products_by_category(
+        category_id: str,
+        db: Session = Depends(get_db)
+):
+    """
+    按分类获取商品接口
+
+    Args:
+        category_id: 分类ID
+        db: 数据库会话
+
+    Returns:
+        该分类下的商品列表
+    """
+    return ProductService.get_products_by_category(db, category_id)
+

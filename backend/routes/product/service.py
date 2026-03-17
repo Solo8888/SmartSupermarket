@@ -296,3 +296,30 @@ class ProductService:
         db.delete(product)
         db.commit()
 
+    @staticmethod
+    def get_products_by_category(db: Session, category_id: str) -> list:
+        """
+        按分类获取商品
+
+        Args:
+            db: 数据库会话
+            category_id: 分类ID
+
+        Returns:
+            该分类下的商品列表
+        """
+        products = db.query(Product).filter(
+            Product.category_id == category_id,
+            Product.status == 'active'
+        ).all()
+        return [
+            {
+                "id": product.id,
+                "name": product.name,
+                "category_id": product.category_id,
+                "price": product.price,
+                "image_url": product.image_url
+            }
+            for product in products
+        ]
+
