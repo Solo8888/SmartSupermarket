@@ -90,16 +90,16 @@ const routes = [
         meta: { title: '首页', requiresRole: 'customer' }
       },
       {
+        path: 'categories',
+        name: 'CustomerCategories',
+        component: () => import('../views/customer/Categories.vue'),
+        meta: { title: '分类', requiresRole: 'customer' }
+      },
+      {
         path: 'cart',
         name: 'Cart',
         component: () => import('../views/customer/Cart.vue'),
         meta: { title: '购物车', requiresRole: 'customer' }
-      },
-      {
-        path: 'orders',
-        name: 'CustomerOrders',
-        component: () => import('../views/customer/Orders.vue'),
-        meta: { title: '我的订单', requiresRole: 'customer' }
       },
       {
         path: 'profile',

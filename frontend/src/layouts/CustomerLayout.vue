@@ -14,14 +14,14 @@ const menuItems = [
     icon: '🏠'
   },
   {
+    name: '分类',
+    path: '/customer/categories',
+    icon: '📁'
+  },
+  {
     name: '购物车',
     path: '/customer/cart',
     icon: '🛒'
-  },
-  {
-    name: '订单',
-    path: '/customer/orders',
-    icon: '📋'
   },
   {
     name: '我的',

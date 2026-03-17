@@ -23,3 +23,7 @@ export const updateProduct = (id, data) => {
 export const deleteProduct = (id) => {
   return request.delete(`/products/${id}`)
 }
+
+export const getProductsByCategory = (categoryId) => {
+  return request.get(`/products/category/${categoryId}`)
+}

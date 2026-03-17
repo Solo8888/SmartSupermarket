@@ -1,17 +1,14 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import * as productApi from '../../api/product'
-import * as categoryApi from '../../api/category'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
 const products = ref([])
-const categories = ref([])
 const loading = ref(false)
 const page = ref(1)
 const size = ref(20)
 const total = ref(0)
-const selectedCategory = ref(null)
 const searchQuery = ref('')
 
 const fetchProducts = async () => {
@@ -24,16 +21,20 @@ const fetchProducts = async () => {
     if (searchQuery.value) {
       params.search = searchQuery.value
     }
-    if (selectedCategory.value) {
-      params.category_id = selectedCategory.value
-    }
     const response = await productApi.getProducts(params)
+    console.log('商品数据:', response)
+    let newProducts = response.items || []
+    // 随机排序商品
     if (page.value === 1) {
-      products.value = response.data.items || []
-    } else {
-      products.value = [...products.value, ...(response.data.items || [])]
+      newProducts = newProducts.sort(() => Math.random() - 0.5)
     }
-    total.value = response.data.total || 0
+    if (page.value === 1) {
+      products.value = newProducts
+    } else {
+      products.value = [...products.value, ...newProducts]
+    }
+    total.value = response.total || 0
+    console.log('处理后商品数据:', products.value)
   } catch (err) {
     console.error('获取商品失败:', err)
   } finally {
@@ -41,22 +42,7 @@ const fetchProducts = async () => {
   }
 }
 
-const fetchCategories = async () => {
-  try {
-    const response = await categoryApi.getAllCategories()
-    categories.value = response || []
-  } catch (err) {
-    console.error('获取分类失败:', err)
-  }
-}
-
 const handleSearch = () => {
-  page.value = 1
-  fetchProducts()
-}
-
-const selectCategory = (categoryId) => {
-  selectedCategory.value = categoryId === selectedCategory.value ? null : categoryId
   page.value = 1
   fetchProducts()
 }
@@ -76,12 +62,11 @@ const getProductImage = (product) => {
   if (product.image_url) {
     return product.image_url
   }
-  return 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=' + encodeURIComponent(product.name) + '&image_size=square'
+  return 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=' + encodeURIComponent(product.name || '商品') + '&image_size=square'
 }
 
 onMounted(() => {
   fetchProducts()
-  fetchCategories()
 })
 </script>
 
@@ -99,30 +84,18 @@ onMounted(() => {
       </div>
     </div>
     
-    <div class="category-nav">
-      <div
-        v-for="category in categories"
-        :key="category.id"
-        class="category-item"
-        :class="{ active: selectedCategory === category.id }"
-        @click="selectCategory(category.id)"
-      >
-        {{ category.name }}
-      </div>
-    </div>
-    
     <div class="product-grid">
       <div
-        v-for="product in products"
-        :key="product.id"
+        v-for="(product, index) in products"
+        :key="product.id || index"
         class="product-card"
       >
         <div class="product-image">
-          <img :src="getProductImage(product)" :alt="product.name" />
+          <img :src="getProductImage(product)" :alt="product.name || '商品'" />
         </div>
         <div class="product-info">
-          <div class="product-name">{{ product.name }}</div>
-          <div class="product-price">{{ formatPrice(product.price) }}</div>
+          <div class="product-name">{{ product.name || '未知商品' }}</div>
+          <div class="product-price">{{ formatPrice(product.price || 0) }}</div>
         </div>
       </div>
     </div>
@@ -172,46 +145,12 @@ onMounted(() => {
   cursor: pointer;
 }
 
-.category-nav {
-  display: flex;
-  gap: 8px;
-  overflow-x: auto;
-  padding-bottom: 8px;
-  margin-bottom: 16px;
-  scrollbar-width: none;
-}
 
-.category-nav::-webkit-scrollbar {
-  display: none;
-}
-
-.category-item {
-  padding: 8px 16px;
-  background: white;
-  border: 1px solid #e5e7eb;
-  border-radius: 20px;
-  white-space: nowrap;
-  cursor: pointer;
-  font-size: 14px;
-  color: #6b7280;
-  transition: all 0.2s;
-}
-
-.category-item:hover {
-  border-color: #3b82f6;
-  color: #3b82f6;
-}
-
-.category-item.active {
-  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-  border-color: transparent;
-  color: white;
-}
 
 .product-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
+  gap: 16px;
 }
 
 .product-card {
@@ -219,6 +158,12 @@ onMounted(() => {
   border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.product-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .product-image {
@@ -232,6 +177,11 @@ onMounted(() => {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  transition: transform 0.3s;
+}
+
+.product-card:hover .product-image img {
+  transform: scale(1.05);
 }
 
 .product-info {
@@ -243,17 +193,14 @@ onMounted(() => {
   font-weight: 500;
   color: #1f2937;
   margin-bottom: 8px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
+  line-height: 1.4;
 }
 
 .product-price {
   font-size: 16px;
   font-weight: 600;
   color: #dc2626;
+  margin-top: auto;
 }
 
 .loading,
