@@ -38,6 +38,14 @@ const menuItems = computed(() => {
         icon: '🎉'
       }
     )
+  } else if (role === 'system_admin') {
+    items.push(
+      {
+        name: '门店管理',
+        path: '/admin/stores',
+        icon: '🏪'
+      }
+    )
   }
   
   return items

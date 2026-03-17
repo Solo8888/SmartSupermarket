@@ -53,6 +53,12 @@ const routes = [
         name: 'Promotions',
         component: () => import('../views/admin/Promotions.vue'),
         meta: { title: '促销活动管理', requiresRole: 'operations_manager' }
+      },
+      {
+        path: 'stores',
+        name: 'Stores',
+        component: () => import('../views/admin/Stores.vue'),
+        meta: { title: '门店管理', requiresRole: 'system_admin' }
       }
     ]
   },
@@ -109,8 +115,9 @@ router.beforeEach((to, from, next) => {
   }
   
   const isAuthenticated = !!accessToken
-  const isManager = userInfo?.role === 'inventory_manager' || userInfo?.role === 'operations_manager'
+  const isManager = userInfo?.role === 'inventory_manager' || userInfo?.role === 'operations_manager' || userInfo?.role === 'system_admin'
   const isCustomer = userInfo?.role === 'customer'
+  const isSystemAdmin = userInfo?.role === 'system_admin'
   
   if (to.meta.requiresAuth && !isAuthenticated) {
     next('/login')
@@ -122,12 +129,16 @@ router.beforeEach((to, from, next) => {
     next('/admin/promotions')
   } else if (to.path === '/admin' && userInfo?.role === 'inventory_manager') {
     next('/admin/categories')
+  } else if (to.path === '/admin' && userInfo?.role === 'system_admin') {
+    next('/admin/stores')
   } else if (to.path === '/admin' && userInfo?.role === 'customer') {
     next('/customer/home')
   } else if ((to.path === '/login' || to.path === '/register') && isAuthenticated) {
     if (isManager) {
       if (userInfo?.role === 'operations_manager') {
         next('/admin/promotions')
+      } else if (userInfo?.role === 'system_admin') {
+        next('/admin/stores')
       } else {
         next('/admin/categories')
       }
@@ -138,6 +149,8 @@ router.beforeEach((to, from, next) => {
     if (isManager) {
       if (userInfo?.role === 'operations_manager') {
         next('/admin/promotions')
+      } else if (userInfo?.role === 'system_admin') {
+        next('/admin/stores')
       } else {
         next('/admin/categories')
       }
