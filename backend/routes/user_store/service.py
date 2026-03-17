@@ -63,3 +63,40 @@ class UserStoreService:
             "store_id": allocation.store_id,
             "created_at": allocation.created_at
         }
+    
+    @staticmethod
+    def get_user_stores(db: Session, user_id: str, current_user) -> list:
+        """
+        获取用户的门店列表
+
+        Args:
+            db: 数据库会话
+            user_id: 用户ID
+            current_user: 当前用户
+
+        Returns:
+            用户的门店列表
+
+        Raises:
+            NotFoundError: 用户不存在
+        """
+        # 检查用户是否存在
+        existing_user = db.query(User).filter(User.id == user_id).first()
+        if not existing_user:
+            raise NotFoundError("用户不存在")
+
+        # 查询用户的门店分配
+        allocations = db.query(UserStore, Store.name.label('store_name')).join(
+            Store, UserStore.store_id == Store.id
+        ).filter(UserStore.user_id == user_id).all()
+
+        # 转换为字典列表返回
+        return [
+            {
+                "id": allocation.UserStore.id,
+                "store_id": allocation.UserStore.store_id,
+                "store_name": allocation.store_name,
+                "created_at": allocation.UserStore.created_at
+            }
+            for allocation in allocations
+        ]
