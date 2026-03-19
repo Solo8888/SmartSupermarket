@@ -46,7 +46,10 @@ def add_item_to_cart(
         Product.id == item_data.product_id
     ).first()
     if not product:
-        raise BusinessException(f"商品不存在，ID: {item_data.product_id}")
+        raise BusinessException(
+            f"商品不存在，ID: {item_data.product_id}",
+            "PRODUCT_NOT_FOUND"
+        )
 
     # 检查商品是否已在购物车中
     existing_item = db.query(CartItem).filter(
@@ -96,4 +99,40 @@ def get_cart(db: Session, user_id: str) -> Cart:
         db.add(cart)
         db.commit()
         db.refresh(cart)
+    return cart
+
+
+def remove_cart_item(db: Session, user_id: str, item_id: str) -> Cart:
+    """
+    删除购物车中的单个商品
+
+    Args:
+        db: 数据库会话
+        user_id: 用户ID
+        item_id: 购物车项ID
+
+    Returns:
+        更新后的购物车对象
+    """
+    # 获取用户购物车
+    cart = get_cart(db, user_id)
+
+    # 查找要删除的购物车项
+    cart_item = db.query(CartItem).filter(
+        CartItem.id == item_id,
+        CartItem.cart_id == cart.id
+    ).first()
+
+    if not cart_item:
+        raise BusinessException(
+            f"购物车项不存在，ID: {item_id}",
+            "CART_ITEM_NOT_FOUND"
+        )
+
+    # 删除购物车项
+    db.delete(cart_item)
+    db.commit()
+
+    # 重新获取购物车，包含所有商品
+    db.refresh(cart)
     return cart

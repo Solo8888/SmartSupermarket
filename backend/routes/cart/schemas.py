@@ -42,3 +42,8 @@ class CartResponse(BaseModel):
 class AddToCartResponse(BaseModel):
     message: str
     cart: CartResponse
+
+
+class RemoveCartItemResponse(BaseModel):
+    message: str
+    cart: CartResponse

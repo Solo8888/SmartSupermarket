@@ -2,9 +2,10 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from models import get_db
 from .schemas import (
-    CartItemCreate, AddToCartResponse, CartResponse, CartItemResponse
+    CartItemCreate, AddToCartResponse, CartResponse, CartItemResponse,
+    RemoveCartItemResponse
 )
-from .service import add_item_to_cart, get_cart
+from .service import add_item_to_cart, get_cart, remove_cart_item
 
 cart_router = APIRouter(
     prefix="/api/cart",
@@ -111,6 +112,61 @@ def get_user_cart(
             items=cart_items,
             created_at=cart.created_at,
             updated_at=cart.updated_at
+        )
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@cart_router.delete("/items/{item_id}", response_model=RemoveCartItemResponse)
+def remove_item(
+    item_id: str,
+    db: Session = Depends(get_db),
+    # 这里可以添加用户身份验证依赖
+    # current_user = Depends(get_current_user)
+):
+    """
+    删除购物车中的单个商品
+
+    Args:
+        item_id: 购物车项ID
+        db: 数据库会话
+        current_user: 当前用户（需要身份验证）
+
+    Returns:
+        删除结果和更新后的购物车信息
+    """
+    # 暂时使用固定用户ID，实际应用中应该从身份验证获取
+    user_id = "12345678-1234-1234-1234-123456789012"
+
+    try:
+        cart = remove_cart_item(db, user_id, item_id)
+
+        # 构建响应数据
+        cart_items = []
+        for cart_item in cart.cart_items:
+            cart_items.append(CartItemResponse(
+                id=cart_item.id,
+                cart_id=cart_item.cart_id,
+                product_id=cart_item.product_id,
+                product_name=cart_item.product_name,
+                product_image=cart_item.product_image,
+                price=cart_item.price,
+                quantity=cart_item.quantity,
+                created_at=cart_item.created_at,
+                updated_at=cart_item.updated_at
+            ))
+
+        cart_response = CartResponse(
+            id=cart.id,
+            user_id=cart.user_id,
+            items=cart_items,
+            created_at=cart.created_at,
+            updated_at=cart.updated_at
+        )
+
+        return RemoveCartItemResponse(
+            message="商品已成功从购物车中删除",
+            cart=cart_response
         )
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
