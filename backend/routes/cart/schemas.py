@@ -47,3 +47,7 @@ class AddToCartResponse(BaseModel):
 class RemoveCartItemResponse(BaseModel):
     message: str
     cart: CartResponse
+
+
+class RemoveCartItemsRequest(BaseModel):
+    item_ids: list[str] = Field(..., description="要删除的购物车项ID列表")

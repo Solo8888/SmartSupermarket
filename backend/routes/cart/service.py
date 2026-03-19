@@ -136,3 +136,40 @@ def remove_cart_item(db: Session, user_id: str, item_id: str) -> Cart:
     # 重新获取购物车，包含所有商品
     db.refresh(cart)
     return cart
+
+
+def remove_cart_items(db: Session, user_id: str, item_ids: list) -> Cart:
+    """
+    删除购物车中的多个商品
+
+    Args:
+        db: 数据库会话
+        user_id: 用户ID
+        item_ids: 购物车项ID列表
+
+    Returns:
+        更新后的购物车对象
+    """
+    # 获取用户购物车
+    cart = get_cart(db, user_id)
+
+    # 查找要删除的购物车项
+    cart_items = db.query(CartItem).filter(
+        CartItem.id.in_(item_ids),
+        CartItem.cart_id == cart.id
+    ).all()
+
+    if not cart_items:
+        raise BusinessException(
+            "未找到要删除的购物车项",
+            "CART_ITEMS_NOT_FOUND"
+        )
+
+    # 删除购物车项
+    for item in cart_items:
+        db.delete(item)
+    db.commit()
+
+    # 重新获取购物车，包含所有商品
+    db.refresh(cart)
+    return cart
