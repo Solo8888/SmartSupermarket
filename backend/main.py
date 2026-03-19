@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi_pagination import add_pagination
 from core.exceptions import BusinessException, business_exception_handler, general_exception_handler
-from routes import user_router, category_router, product_router, upload_router, inventory_router, promotion_router, order_router, store_router, user_store_router
+from routes import user_router, category_router, product_router, upload_router, inventory_router, promotion_router, order_router, store_router, user_store_router, cart_router
 from models import init_db
 
 # 创建FastAPI应用实例
@@ -46,6 +46,7 @@ app.include_router(promotion_router)
 app.include_router(order_router)
 app.include_router(store_router)
 app.include_router(user_store_router)
+app.include_router(cart_router)
 
 # 挂载静态文件目录
 import os

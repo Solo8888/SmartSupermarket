@@ -37,6 +37,7 @@ from .user_coupon import UserCoupon
 from .address_book import AddressBook
 from .promotion_product import PromotionProduct
 from .promotion_category import PromotionCategory
+from .cart import Cart, CartItem
 
 
 def get_db() -> Session:
