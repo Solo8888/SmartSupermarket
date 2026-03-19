@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '../stores/user'
+import FixedCart from '../components/FixedCart.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -34,6 +35,10 @@ const isActive = (path) => {
   return route.path === path
 }
 
+const isHomeOrCategories = computed(() => {
+  return route.path === '/customer/home' || route.path === '/customer/categories'
+})
+
 const handleLogout = () => {
   userStore.logout()
   router.push('/login')
@@ -45,6 +50,9 @@ const handleLogout = () => {
     <main class="main-content">
       <router-view />
     </main>
+    
+    <!-- 只有在首页和分类页面显示购物车 -->
+    <FixedCart v-if="isHomeOrCategories" />
     
     <nav class="bottom-nav">
       <a
@@ -74,6 +82,11 @@ const handleLogout = () => {
   flex: 1;
   overflow-y: auto;
   padding-bottom: 70px;
+}
+
+/* 当显示购物车时，增加底部padding */
+.customer-layout:has(.fixed-cart) .main-content {
+  padding-bottom: 140px;
 }
 
 .bottom-nav {
