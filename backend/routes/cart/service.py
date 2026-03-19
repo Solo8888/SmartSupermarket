@@ -76,3 +76,24 @@ def add_item_to_cart(
     # 重新获取购物车，包含所有商品
     db.refresh(cart)
     return cart
+
+
+def get_cart(db: Session, user_id: str) -> Cart:
+    """
+    获取用户的购物车
+
+    Args:
+        db: 数据库会话
+        user_id: 用户ID
+
+    Returns:
+        购物车对象
+    """
+    cart = db.query(Cart).filter(Cart.user_id == user_id).first()
+    if not cart:
+        # 如果购物车不存在，创建一个空购物车
+        cart = Cart(user_id=user_id)
+        db.add(cart)
+        db.commit()
+        db.refresh(cart)
+    return cart
