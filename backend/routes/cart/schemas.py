@@ -49,5 +49,9 @@ class RemoveCartItemResponse(BaseModel):
     cart: CartResponse
 
 
+class CartItemUpdate(BaseModel):
+    quantity: int = Field(..., gt=0, description="购买数量")
+
+
 class RemoveCartItemsRequest(BaseModel):
     item_ids: list[str] = Field(..., description="要删除的购物车项ID列表")

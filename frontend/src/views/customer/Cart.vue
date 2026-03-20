@@ -99,49 +99,45 @@ const fetchCart = async () => {
 }
 
 const increaseQuantity = async (item) => {
+  const oldQuantity = item.quantity
   try {
-    // 这里应该调用API更新数量，暂时直接修改本地数据
     item.quantity++
-    // 实际应用中应该调用API
-    // await cartApi.updateCartItem(item.id, { quantity: item.quantity })
+    const response = await cartApi.updateCartItem(item.id, { quantity: item.quantity })
+    cartItems.value = response.cart.items
     ElMessage.success('数量已更新')
   } catch (err) {
     console.error('更新数量失败:', err)
     ElMessage.error('更新数量失败，请稍后重试')
-    // 恢复原来的数量
-    item.quantity--
+    item.quantity = oldQuantity
   }
 }
 
 const decreaseQuantity = async (item) => {
   if (item.quantity > 1) {
+    const oldQuantity = item.quantity
     try {
-      // 这里应该调用API更新数量，暂时直接修改本地数据
       item.quantity--
-      // 实际应用中应该调用API
-      // await cartApi.updateCartItem(item.id, { quantity: item.quantity })
+      const response = await cartApi.updateCartItem(item.id, { quantity: item.quantity })
+      cartItems.value = response.cart.items
       ElMessage.success('数量已更新')
     } catch (err) {
       console.error('更新数量失败:', err)
       ElMessage.error('更新数量失败，请稍后重试')
-      // 恢复原来的数量
-      item.quantity++
+      item.quantity = oldQuantity
     }
   }
 }
 
 const removeItem = async (itemId) => {
+  const oldCartItems = [...cartItems.value]
   try {
-    // 这里应该调用API删除商品，暂时直接修改本地数据
-    cartItems.value = cartItems.value.filter(item => item.id !== itemId)
-    // 实际应用中应该调用API
-    // await cartApi.removeCartItem(itemId)
+    const response = await cartApi.removeCartItem(itemId)
+    cartItems.value = response.cart.items
     ElMessage.success('商品已从购物车中删除')
   } catch (err) {
     console.error('删除商品失败:', err)
     ElMessage.error('删除商品失败，请稍后重试')
-    // 重新获取购物车数据
-    fetchCart()
+    cartItems.value = oldCartItems
   }
 }
 
