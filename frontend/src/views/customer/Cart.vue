@@ -1,24 +1,31 @@
 <template>
   <div class="cart-page">
-    <h1 class="page-title">购物车</h1>
+    <div class="page-header">
+      <h1 class="page-title">购物车</h1>
+    </div>
     
-    <div v-if="cartItems.length === 0" class="empty-cart">
+    <div v-if="loading" class="loading">
+      加载中...
+    </div>
+    
+    <div v-else-if="cartItems.length === 0" class="empty-cart">
       <div class="empty-icon">🛒</div>
       <p>购物车是空的</p>
-      <router-link to="/customer" class="go-shopping-btn">去购物</router-link>
+      <router-link to="/customer/home" class="go-shopping-btn">去购物</router-link>
     </div>
     
     <div v-else>
       <div class="cart-list">
         <div v-for="item in cartItems" :key="item.id" class="cart-item">
           <div class="item-image">
-            <img :src="getProductImage(item)" :alt="item.name" />
+            <img :src="getProductImage(item)" :alt="item.product_name" />
           </div>
           <div class="item-info">
-            <div class="item-name">{{ item.name }}</div>
+            <div class="item-name">{{ item.product_name }}</div>
             <div class="item-price">¥{{ formatPrice(item.price) }}</div>
             <div class="item-quantity">
-              <button class="quantity-btn" @click="decreaseQuantity(item)">-</button>
+              <button class="quantity-btn" @click="decreaseQuantity(item)" :disabled="item.quantity <= 1">-
+              </button>
               <span class="quantity">{{ item.quantity }}</span>
               <button class="quantity-btn" @click="increaseQuantity(item)">+</button>
             </div>
@@ -30,16 +37,19 @@
       </div>
       
       <div class="cart-summary">
-        <div class="total-price">
-          <span>合计：</span>
-          <span class="price">¥{{ formatPrice(totalPrice) }}</span>
+        <div class="summary-content">
+          <div class="total-price">
+            <span>合计：</span>
+            <span class="price">¥{{ formatPrice(totalPrice) }}</span>
+          </div>
+          <button 
+            class="checkout-btn" 
+            @click="checkout"
+            :disabled="cartItems.length === 0"
+          >
+            结算 ({{ totalQuantity }})
+          </button>
         </div>
-        <button 
-          class="checkout-btn" 
-          @click="checkout"
-        >
-          结算 ({{ totalQuantity }})
-        </button>
       </div>
     </div>
   </div>
@@ -48,10 +58,13 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
+import * as cartApi from '../../api/cart'
 
 const router = useRouter()
 
 const cartItems = ref([])
+const loading = ref(false)
 
 const totalPrice = computed(() => {
   return cartItems.value.reduce((sum, item) => sum + item.price * item.quantity, 0)
@@ -66,67 +79,119 @@ const formatPrice = (price) => {
 }
 
 const getProductImage = (product) => {
-  if (product.imageUrl) {
-    return product.imageUrl
+  if (product.product_image) {
+    return product.product_image
   }
-  return `https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=${encodeURIComponent(product.name || '商品')}&image_size=square`
+  return `https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=${encodeURIComponent(product.product_name || '商品')}&image_size=square`
 }
 
-const increaseQuantity = (item) => {
-  item.quantity++
+const fetchCart = async () => {
+  loading.value = true
+  try {
+    const response = await cartApi.getCartItems()
+    cartItems.value = response.items || []
+  } catch (err) {
+    console.error('获取购物车失败:', err)
+    ElMessage.error('获取购物车失败，请稍后重试')
+  } finally {
+    loading.value = false
+  }
 }
 
-const decreaseQuantity = (item) => {
-  if (item.quantity > 1) {
+const increaseQuantity = async (item) => {
+  try {
+    // 这里应该调用API更新数量，暂时直接修改本地数据
+    item.quantity++
+    // 实际应用中应该调用API
+    // await cartApi.updateCartItem(item.id, { quantity: item.quantity })
+    ElMessage.success('数量已更新')
+  } catch (err) {
+    console.error('更新数量失败:', err)
+    ElMessage.error('更新数量失败，请稍后重试')
+    // 恢复原来的数量
     item.quantity--
   }
 }
 
-const removeItem = (itemId) => {
-  cartItems.value = cartItems.value.filter(item => item.id !== itemId)
+const decreaseQuantity = async (item) => {
+  if (item.quantity > 1) {
+    try {
+      // 这里应该调用API更新数量，暂时直接修改本地数据
+      item.quantity--
+      // 实际应用中应该调用API
+      // await cartApi.updateCartItem(item.id, { quantity: item.quantity })
+      ElMessage.success('数量已更新')
+    } catch (err) {
+      console.error('更新数量失败:', err)
+      ElMessage.error('更新数量失败，请稍后重试')
+      // 恢复原来的数量
+      item.quantity++
+    }
+  }
+}
+
+const removeItem = async (itemId) => {
+  try {
+    // 这里应该调用API删除商品，暂时直接修改本地数据
+    cartItems.value = cartItems.value.filter(item => item.id !== itemId)
+    // 实际应用中应该调用API
+    // await cartApi.removeCartItem(itemId)
+    ElMessage.success('商品已从购物车中删除')
+  } catch (err) {
+    console.error('删除商品失败:', err)
+    ElMessage.error('删除商品失败，请稍后重试')
+    // 重新获取购物车数据
+    fetchCart()
+  }
 }
 
 const checkout = () => {
+  if (cartItems.length === 0) {
+    ElMessage.warning('购物车是空的')
+    return
+  }
+  // 实际应用中应该跳转到结算页面
   alert('结算功能开发中...')
 }
 
 onMounted(() => {
-  // 模拟购物车数据
-  cartItems.value = [
-    {
-      id: 1,
-      name: '新鲜苹果',
-      price: 9.99,
-      quantity: 2
-    },
-    {
-      id: 2,
-      name: '有机蔬菜',
-      price: 15.99,
-      quantity: 1
-    }
-  ]
+  fetchCart()
 })
 </script>
 
 <style scoped>
 .cart-page {
   padding: 16px;
-  padding-bottom: 80px;
   min-height: 100vh;
-  background-color: #f5f5f5;
+  background-color: #f5f7fa;
+}
+
+.page-header {
+  margin-bottom: 20px;
 }
 
 .page-title {
-  font-size: 24px;
+  font-size: 20px;
   font-weight: 600;
-  margin-bottom: 16px;
-  color: #333;
+  margin: 0;
+  color: #1f2937;
+}
+
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  color: #9ca3af;
+  font-size: 16px;
 }
 
 .empty-cart {
   text-align: center;
   padding: 60px 20px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
 .empty-icon {
@@ -136,150 +201,225 @@ onMounted(() => {
 
 .empty-cart p {
   font-size: 16px;
-  color: #666;
+  color: #6b7280;
   margin-bottom: 24px;
 }
 
 .go-shopping-btn {
   display: inline-block;
   padding: 12px 32px;
-  background-color: #1890ff;
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
   color: white;
   text-decoration: none;
   border-radius: 24px;
   font-size: 16px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.go-shopping-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }
 
 .cart-list {
-  margin-bottom: 16px;
+  margin-bottom: 20px;
 }
 
 .cart-item {
   display: flex;
   align-items: center;
-  background-color: white;
+  background: white;
   border-radius: 12px;
-  padding: 12px;
+  padding: 16px;
   margin-bottom: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  transition: all 0.2s;
+}
+
+.cart-item:hover {
+  transform: translateX(4px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
 .item-image {
-  width: 80px;
-  height: 80px;
+  width: 90px;
+  height: 90px;
   border-radius: 8px;
   overflow: hidden;
-  margin-right: 12px;
+  margin-right: 16px;
   flex-shrink: 0;
+  background: #f9fafb;
 }
 
 .item-image img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  transition: transform 0.3s;
+}
+
+.cart-item:hover .item-image img {
+  transform: scale(1.05);
 }
 
 .item-info {
   flex: 1;
-  margin-right: 12px;
+  margin-right: 16px;
+  min-width: 0;
 }
 
 .item-name {
   font-size: 15px;
   font-weight: 500;
-  color: #333;
+  color: #1f2937;
   margin-bottom: 8px;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  line-height: 1.4;
 }
 
 .item-price {
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 600;
-  color: #ff4d4f;
-  margin-bottom: 8px;
+  color: #ef4444;
+  margin-bottom: 12px;
 }
 
 .item-quantity {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
 }
 
 .quantity-btn {
-  width: 28px;
-  height: 28px;
-  border: 1px solid #d9d9d9;
-  border-radius: 4px;
-  background-color: white;
+  width: 32px;
+  height: 32px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  background: white;
   font-size: 18px;
+  font-weight: 500;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: all 0.2s;
+}
+
+.quantity-btn:hover:not(:disabled) {
+  border-color: #3b82f6;
+  color: #3b82f6;
+}
+
+.quantity-btn:disabled {
+  border-color: #e5e7eb;
+  color: #d1d5db;
+  cursor: not-allowed;
 }
 
 .quantity {
-  font-size: 15px;
-  min-width: 24px;
+  font-size: 16px;
+  font-weight: 500;
+  min-width: 32px;
   text-align: center;
+  color: #1f2937;
 }
 
 .remove-btn {
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   border: none;
   border-radius: 50%;
-  background-color: #f5f5f5;
-  color: #999;
+  background: #f3f4f6;
+  color: #6b7280;
   font-size: 24px;
+  font-weight: 300;
   cursor: pointer;
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: all 0.2s;
+}
+
+.remove-btn:hover {
+  background: #ef4444;
+  color: white;
+  transform: scale(1.1);
 }
 
 .cart-summary {
   position: fixed;
-  bottom: 70px;
+  bottom: 0;
   left: 0;
   right: 0;
-  background-color: white;
-  padding: 12px 16px;
+  background: white;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.08);
+  z-index: 1000;
+}
+
+.summary-content {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.06);
+  padding: 16px;
+  max-width: 480px;
+  margin: 0 auto;
 }
 
 .total-price {
-  font-size: 15px;
-  color: #333;
+  font-size: 16px;
+  color: #6b7280;
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
 }
 
 .total-price .price {
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 600;
-  color: #ff4d4f;
+  color: #ef4444;
 }
 
 .checkout-btn {
   padding: 12px 32px;
-  background-color: #ff4d4f;
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
   color: white;
   border: none;
   border-radius: 24px;
-  font-size: 15px;
-  font-weight: 500;
+  font-size: 16px;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s;
+  transition: all 0.2s;
+}
+
+.checkout-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }
 
 .checkout-btn:disabled {
-  background-color: #ffccc7;
+  background: #e5e7eb;
+  color: #9ca3af;
   cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+@media (min-width: 768px) {
+  .cart-page {
+    max-width: 480px;
+    margin: 0 auto;
+  }
+  
+  .cart-summary {
+    max-width: 480px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-radius: 12px 12px 0 0;
+  }
 }
 </style>

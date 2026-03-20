@@ -181,7 +181,7 @@ onMounted(() => {
             </div>
             <div class="product-actions">
               <button class="add-to-cart-btn" @click="addToCart(product)">
-                +
+                🛒
               </button>
             </div>
           </div>
@@ -421,13 +421,13 @@ onMounted(() => {
 }
 
 .add-to-cart-btn {
-  width: 36px;
-  height: 36px;
+  width: 30px;
+  height: 30px;
   border: 2px solid #3b82f6;
   border-radius: 50%;
   background: white;
   color: #3b82f6;
-  font-size: 20px;
+  font-size: 14px;
   font-weight: bold;
   cursor: pointer;
   transition: all 0.2s;

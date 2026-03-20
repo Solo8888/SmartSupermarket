@@ -4,6 +4,7 @@ import uuid
 from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Numeric
 from sqlalchemy.dialects.mysql import CHAR
 from sqlalchemy.sql import func
+from sqlalchemy.orm import relationship
 from . import Base
 
 
@@ -21,6 +22,9 @@ class Cart(Base):
         onupdate=func.current_timestamp(), nullable=False,
         comment='更新时间'
     )
+    
+    # 关系定义
+    cart_items = relationship("CartItem", backref="cart", cascade="all, delete-orphan")
 
 
 class CartItem(Base):
