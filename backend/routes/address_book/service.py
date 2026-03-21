@@ -143,3 +143,31 @@ class AddressService:
             "created_at": address.created_at,
             "updated_at": address.updated_at
         }
+
+    @staticmethod
+    def delete_address(db: Session, address_id: str, user_id: str) -> dict:
+        """
+        删除地址
+
+        Args:
+            db: 数据库会话
+            address_id: 地址ID
+            user_id: 用户ID
+
+        Returns:
+            删除成功的信息
+
+        Raises:
+            ClientError: 地址不存在或无权限
+        """
+        # 查询地址
+        address = db.query(Address).filter(Address.id == address_id, Address.user_id == user_id).first()
+        if not address:
+            raise ClientError("地址不存在或无权限", "PERMISSION_DENIED")
+
+        # 删除地址
+        db.delete(address)
+        db.commit()
+
+        # 返回删除成功信息
+        return {"message": "地址删除成功"}

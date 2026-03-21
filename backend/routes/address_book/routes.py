@@ -73,3 +73,24 @@ async def update_address(
     """
     address = AddressService.update_address(db, address_id, payload, current_user_id)
     return AddressResponse(**address)
+
+
+@address_router.delete('/{address_id}', status_code=204)
+async def delete_address(
+        address_id: str,
+        db: Session = Depends(get_db),
+        current_user_id: str = Depends(get_current_user_id)
+):
+    """
+    删除地址接口
+
+    Args:
+        address_id: 地址ID
+        db: 数据库会话
+        current_user_id: 当前用户ID
+
+    Returns:
+        无内容，状态码204
+    """
+    AddressService.delete_address(db, address_id, current_user_id)
+    return None
