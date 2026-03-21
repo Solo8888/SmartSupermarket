@@ -9,6 +9,7 @@ from .order.routes import order_router
 from .store.routes import store_router
 from .user_store.routes import user_store_router
 from .cart.routes import cart_router
+from .address_book.routes import address_router
 
 __all__ = [
     "user_router",
@@ -20,5 +21,6 @@ __all__ = [
     "order_router",
     "store_router",
     "user_store_router",
-    "cart_router"
+    "cart_router",
+    "address_router"
 ]
