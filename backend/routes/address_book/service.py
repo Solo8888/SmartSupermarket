@@ -57,3 +57,36 @@ class AddressService:
             "created_at": address.created_at,
             "updated_at": address.updated_at
         }
+
+    @staticmethod
+    def get_addresses(db: Session, user_id: str) -> list:
+        """
+        获取用户的地址列表
+
+        Args:
+            db: 数据库会话
+            user_id: 用户ID
+
+        Returns:
+            用户的地址列表
+        """
+        # 查询用户的所有地址
+        addresses = db.query(Address).filter(Address.user_id == user_id).order_by(Address.is_default.desc(), Address.updated_at.desc()).all()
+
+        # 转换为字典列表返回
+        return [
+            {
+                "id": address.id,
+                "user_id": address.user_id,
+                "name": address.recipient,
+                "phone": address.phone,
+                "province": address.province,
+                "city": address.city,
+                "district": address.district,
+                "address": address.detail_address,
+                "is_default": address.is_default,
+                "created_at": address.created_at,
+                "updated_at": address.updated_at
+            }
+            for address in addresses
+        ]
