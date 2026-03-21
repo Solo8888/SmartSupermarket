@@ -20,6 +20,11 @@ class AddressCreate(AddressBase):
     pass
 
 
+class AddressUpdate(AddressBase):
+    """更新地址请求模型"""
+    pass
+
+
 class AddressResponse(AddressBase):
     """地址响应模型"""
     id: str

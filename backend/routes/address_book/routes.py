@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from models import get_db
 from core.auth import get_current_user_id
 from typing import List
-from .schemas import AddressCreate, AddressResponse
+from .schemas import AddressCreate, AddressUpdate, AddressResponse
 from .service import AddressService
 
 address_router = APIRouter(prefix='/addresses', tags=['addresses'])
@@ -50,3 +50,26 @@ async def get_addresses(
     """
     addresses = AddressService.get_addresses(db, current_user_id)
     return [AddressResponse(**address) for address in addresses]
+
+
+@address_router.put('/{address_id}', response_model=AddressResponse)
+async def update_address(
+        address_id: str,
+        payload: AddressUpdate,
+        db: Session = Depends(get_db),
+        current_user_id: str = Depends(get_current_user_id)
+):
+    """
+    更新地址接口
+
+    Args:
+        address_id: 地址ID
+        payload: 更新地址请求体
+        db: 数据库会话
+        current_user_id: 当前用户ID
+
+    Returns:
+        更新成功的地址信息
+    """
+    address = AddressService.update_address(db, address_id, payload, current_user_id)
+    return AddressResponse(**address)
