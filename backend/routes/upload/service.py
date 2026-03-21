@@ -35,11 +35,8 @@ class UploadService:
             content = await file.read()
             buffer.write(content)
 
-        # 获取基础URL
-        base_url = str(request.base_url).rstrip('/')
-        
-        # 返回完整的文件URL
+        # 返回相对路径，让前端根据当前域名自行拼接
         return {
-            'url': f"{base_url}/uploads/images/{unique_filename}",
+            'url': f"/uploads/images/{unique_filename}",
             'filename': unique_filename
         }

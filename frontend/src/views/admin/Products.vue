@@ -281,7 +281,7 @@ onMounted(() => {
                 <tr v-for="product in products" :key="product.id">
                   <td>
                     <div v-if="product.image_url" class="product-image">
-                      <img :src="product.image_url" :alt="product.name" />
+                      <img :src="product.image_url.startsWith('http') ? product.image_url : window.location.origin + product.image_url" :alt="product.name" />
                     </div>
                     <span v-else class="no-image">-</span>
                   </td>

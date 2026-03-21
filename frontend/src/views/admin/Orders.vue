@@ -318,7 +318,7 @@ onMounted(() => {
           <div v-if="currentOrder.items && currentOrder.items.length > 0" class="order-items">
             <h5>商品列表</h5>
             <div v-for="item in currentOrder.items" :key="item.id" class="order-item">
-              <img v-if="item.product_image" :src="item.product_image" :alt="item.product_name" class="item-image" />
+              <img v-if="item.product_image" :src="item.product_image.startsWith('http') ? item.product_image : window.location.origin + item.product_image" :alt="item.product_name" class="item-image" />
               <div class="item-info">
                 <div class="item-name">{{ item.product_name }}</div>
                 <div class="item-meta">

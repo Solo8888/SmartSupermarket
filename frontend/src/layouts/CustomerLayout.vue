@@ -8,6 +8,9 @@ const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore()
 
+// 购物车更新信号
+const updateCart = ref(false)
+
 const menuItems = [
   {
     name: '首页',
@@ -39,6 +42,18 @@ const isHomeOrCategories = computed(() => {
   return route.path === '/customer/home' || route.path === '/customer/categories'
 })
 
+// 处理购物车更新
+const handleCartUpdate = () => {
+  updateCart.value = true
+  // 重置信号
+  setTimeout(() => {
+    updateCart.value = false
+  }, 100)
+}
+
+// 定义emit，接收子组件的更新事件
+const emit = defineEmits(['update:cart'])
+
 const handleLogout = () => {
   userStore.logout()
   router.push('/login')
@@ -48,11 +63,11 @@ const handleLogout = () => {
 <template>
   <div class="customer-layout">
     <main class="main-content">
-      <router-view />
+      <router-view @update:cart="handleCartUpdate" />
     </main>
     
     <!-- 只有在首页和分类页面显示购物车 -->
-    <FixedCart v-if="isHomeOrCategories" />
+    <FixedCart v-if="isHomeOrCategories" :update-cart="updateCart" />
     
     <nav class="bottom-nav">
       <a

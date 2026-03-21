@@ -1,11 +1,19 @@
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import * as cartApi from '../api/cart'
 
 const router = useRouter()
 const cartItems = ref([])
 const loading = ref(false)
+
+// 定义props，接收父组件传递的更新信号
+const props = defineProps({
+  updateCart: {
+    type: Boolean,
+    default: false
+  }
+})
 
 const fetchCart = async () => {
   loading.value = true
@@ -34,6 +42,13 @@ const totalItems = computed(() => {
 const navigateToCart = () => {
   router.push('/customer/cart')
 }
+
+// 监听更新信号，当接收到更新信号时重新获取购物车数据
+watch(() => props.updateCart, (newValue) => {
+  if (newValue) {
+    fetchCart()
+  }
+})
 
 onMounted(() => {
   fetchCart()

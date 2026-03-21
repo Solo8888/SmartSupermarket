@@ -77,7 +77,13 @@ const getProductImage = (productId) => {
     return ''
   }
   const product = products.value.find(p => p.id === productId)
-  return product ? product.image_url || '' : ''
+  if (product && product.image_url) {
+    if (product.image_url.startsWith('http')) {
+      return product.image_url
+    }
+    return window.location.origin + product.image_url
+  }
+  return ''
 }
 
 const getStockStatus = (inventory) => {

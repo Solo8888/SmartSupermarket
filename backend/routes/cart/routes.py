@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from models import get_db
+from core.auth import get_current_user_id
 from .schemas import (
     CartItemCreate, AddToCartResponse, CartResponse, CartItemResponse,
     RemoveCartItemResponse, RemoveCartItemsRequest, CartItemUpdate
@@ -20,8 +21,9 @@ cart_router = APIRouter(
 def add_to_cart(
     item: CartItemCreate,
     db: Session = Depends(get_db),
+    current_user_id: str = Depends(get_current_user_id)
 ):
-    user_id = "12345678-1234-1234-1234-123456789012"
+    user_id = current_user_id
 
     try:
         cart = add_item_to_cart(db, user_id, item)
@@ -59,8 +61,9 @@ def add_to_cart(
 @cart_router.get("/", response_model=CartResponse)
 def get_user_cart(
     db: Session = Depends(get_db),
+    current_user_id: str = Depends(get_current_user_id)
 ):
-    user_id = "12345678-1234-1234-1234-123456789012"
+    user_id = current_user_id
 
     try:
         cart = get_cart(db, user_id)
@@ -94,8 +97,9 @@ def get_user_cart(
 def remove_item(
     item_id: str,
     db: Session = Depends(get_db),
+    current_user_id: str = Depends(get_current_user_id)
 ):
-    user_id = "12345678-1234-1234-1234-123456789012"
+    user_id = current_user_id
 
     try:
         cart = remove_cart_item(db, user_id, item_id)
@@ -135,8 +139,9 @@ def update_item(
     item_id: str,
     item_update: CartItemUpdate,
     db: Session = Depends(get_db),
+    current_user_id: str = Depends(get_current_user_id)
 ):
-    user_id = "12345678-1234-1234-1234-123456789012"
+    user_id = current_user_id
 
     try:
         cart = update_cart_item(db, user_id, item_id, item_update.quantity)
@@ -175,8 +180,9 @@ def update_item(
 def remove_items(
     request: RemoveCartItemsRequest,
     db: Session = Depends(get_db),
+    current_user_id: str = Depends(get_current_user_id)
 ):
-    user_id = "12345678-1234-1234-1234-123456789012"
+    user_id = current_user_id
 
     try:
         cart = remove_cart_items(db, user_id, request.item_ids)

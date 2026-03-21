@@ -72,7 +72,7 @@ class JWTHandler:
 security = HTTPBearer()
 
 
-def get_current_user_id(credentials: HTTPAuthorizationCredentials = Depends(security)) -> int:
+def get_current_user_id(credentials: HTTPAuthorizationCredentials = Depends(security)) -> str:
     """
     获取当前用户ID的依赖项
 
@@ -84,4 +84,4 @@ def get_current_user_id(credentials: HTTPAuthorizationCredentials = Depends(secu
     """
     token = credentials.credentials
     user_id = JWTHandler.verify_token(token)
-    return int(user_id)
+    return str(user_id)
