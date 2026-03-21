@@ -171,3 +171,48 @@ class AddressService:
 
         # 返回删除成功信息
         return {"message": "地址删除成功"}
+
+    @staticmethod
+    def set_default_address(db: Session, address_id: str, user_id: str) -> dict:
+        """
+        设置地址为默认地址
+
+        Args:
+            db: 数据库会话
+            address_id: 地址ID
+            user_id: 用户ID
+
+        Returns:
+            更新成功的地址信息
+
+        Raises:
+            ClientError: 地址不存在或无权限
+        """
+        # 查询地址
+        address = db.query(Address).filter(Address.id == address_id, Address.user_id == user_id).first()
+        if not address:
+            raise ClientError("地址不存在或无权限", "PERMISSION_DENIED")
+
+        # 将该用户的所有地址设置为非默认
+        db.query(Address).filter(Address.user_id == user_id).update({"is_default": False})
+
+        # 将指定地址设置为默认
+        address.is_default = True
+
+        db.commit()
+        db.refresh(address)
+
+        # 转换为字典返回
+        return {
+            "id": address.id,
+            "user_id": address.user_id,
+            "name": address.recipient,
+            "phone": address.phone,
+            "province": address.province,
+            "city": address.city,
+            "district": address.district,
+            "address": address.detail_address,
+            "is_default": address.is_default,
+            "created_at": address.created_at,
+            "updated_at": address.updated_at
+        }
