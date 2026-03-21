@@ -6,7 +6,7 @@ const userApi = {
   getUserList: async () => {
     try {
       return await request({
-        url: '/users',
+        url: '/users/',
         method: 'GET'
       })
     } catch (error) {

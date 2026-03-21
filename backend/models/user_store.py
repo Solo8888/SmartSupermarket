@@ -1,9 +1,11 @@
 # 用户-门店关联模型
 # 定义用户和门店之间的关联关系
 import uuid
-from sqlalchemy import Column, String, DateTime, ForeignKey, UniqueConstraint
+
+from sqlalchemy import Column, DateTime, ForeignKey, UniqueConstraint
 from sqlalchemy.dialects.mysql import CHAR
 from sqlalchemy.sql import func
+
 from . import Base
 
 

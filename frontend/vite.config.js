@@ -14,7 +14,8 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, '')
       }
-    }
+    },
+    allowedHosts: ['476687e7.r18.vip.cpolar.cn']
   },
   resolve: {
     alias: {

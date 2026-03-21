@@ -6,13 +6,29 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 from models.product import Product
 from models.category import Category
+from models.user_store import UserStore
 from .schemas import ProductCreate, ProductUpdate
-from core.exceptions import NotFoundError
+from core.exceptions import NotFoundError, ClientError
 from fastapi_pagination import Page, Params
 from fastapi_pagination.ext.sqlalchemy import paginate as sqlalchemy_paginate
 
 
 class ProductService:
+    @staticmethod
+    def get_user_stores(db: Session, user_id: str):
+        """
+        获取用户关联的门店ID列表
+
+        Args:
+            db: 数据库会话
+            user_id: 用户ID
+
+        Returns:
+            门店ID列表
+        """
+        user_stores = db.query(UserStore).filter(UserStore.user_id == user_id).all()
+        return [user_store.store_id for user_store in user_stores]
+
     @staticmethod
     def create_product(db: Session, payload: ProductCreate, user) -> dict:
         """
@@ -38,7 +54,6 @@ class ProductService:
                 raise ValueError("商品条码已存在")
 
         # 获取用户关联的门店ID
-        from models.user_store import UserStore
         user_store = db.query(UserStore).filter(UserStore.user_id == user.id).first()
         if not user_store:
             raise ValueError("用户未分配门店")
@@ -100,7 +115,7 @@ class ProductService:
         }
 
     @staticmethod
-    def get_products(db: Session, params: Params, search: str = None) -> Page[Product]:
+    def get_products(db: Session, params: Params, search: str = None, store_id: str = None, user = None) -> Page[Product]:
         """
         获取商品列表
 
@@ -108,12 +123,25 @@ class ProductService:
             db: 数据库会话
             params: 分页参数
             search: 搜索关键词（可选）
+            store_id: 门店ID（可选），按门店过滤商品
+            user: 当前用户
 
         Returns:
             商品列表（分页）
         """
+        # 构建查询
         query = db.query(Product).order_by(Product.id.asc())
         
+        # 系统管理员和顾客可以查看所有商品，其他用户只能查看关联门店的商品
+        if user and user.role not in ['system_admin', 'customer']:
+            user_store_ids = ProductService.get_user_stores(db, user.id)
+            if user_store_ids:
+                query = query.filter(Product.store_id.in_(user_store_ids))
+            else:
+                # 如果用户没有关联门店，返回空列表
+                query = query.filter(Product.store_id.in_([]))
+        
+        # 搜索条件
         if search:
             search_term = f"%{search}%"
             query = query.filter(
@@ -122,20 +150,37 @@ class ProductService:
                 (Product.barcode.like(search_term))
             )
         
+        # 门店过滤
+        if store_id:
+            query = query.filter(Product.store_id == store_id)
+        
         return sqlalchemy_paginate(query, params=params)
     
     @staticmethod
-    def get_all_products(db: Session) -> list:
+    def get_all_products(db: Session, user = None) -> list:
         """
         获取所有商品（不分页）
 
         Args:
             db: 数据库会话
+            user: 当前用户
 
         Returns:
             所有商品列表
         """
-        products = db.query(Product).order_by(Product.id.asc()).all()
+        # 构建查询
+        query = db.query(Product).order_by(Product.id.asc())
+        
+        # 系统管理员和顾客可以查看所有商品，其他用户只能查看关联门店的商品
+        if user and user.role not in ['system_admin', 'customer']:
+            user_store_ids = ProductService.get_user_stores(db, user.id)
+            if user_store_ids:
+                query = query.filter(Product.store_id.in_(user_store_ids))
+            else:
+                # 如果用户没有关联门店，返回空列表
+                query = query.filter(Product.store_id.in_([]))
+        
+        products = query.all()
         return [
             {
                 "id": product.id,
@@ -162,23 +207,32 @@ class ProductService:
         ]
 
     @staticmethod
-    def get_product(db: Session, product_id: str) -> dict:
+    def get_product(db: Session, product_id: str, user = None) -> dict:
         """
         获取单个商品详情
 
         Args:
             db: 数据库会话
             product_id: 商品ID
+            user: 当前用户
 
         Returns:
             商品详情
 
         Raises:
             NotFoundError: 商品不存在
+            ClientError: 权限不足
         """
+        # 获取商品
         product = db.query(Product).filter(Product.id == product_id).first()
         if not product:
             raise NotFoundError("商品不存在")
+
+        # 系统管理员和顾客可以查看所有商品，其他用户只能查看关联门店的商品
+        if user and user.role not in ['system_admin', 'customer']:
+            user_store_ids = ProductService.get_user_stores(db, user.id)
+            if product.store_id not in user_store_ids:
+                raise ClientError("权限不足，无法查看此商品", "PERMISSION_DENIED")
 
         return {
             "id": product.id,
@@ -218,11 +272,18 @@ class ProductService:
 
         Raises:
             NotFoundError: 商品不存在
+            ClientError: 权限不足
         """
         # 获取商品
         product = db.query(Product).filter(Product.id == product_id).first()
         if not product:
             raise NotFoundError("商品不存在")
+
+        # 系统管理员可以更新所有商品，其他用户只能更新关联门店的商品
+        if user.role != 'system_admin':
+            user_store_ids = ProductService.get_user_stores(db, user.id)
+            if product.store_id not in user_store_ids:
+                raise ClientError("权限不足，无法更新此商品", "PERMISSION_DENIED")
 
         # 检查分类是否存在（如果提供了category_id）
         if payload.category_id is not None:
@@ -286,32 +347,57 @@ class ProductService:
 
         Raises:
             NotFoundError: 商品不存在
+            ClientError: 权限不足
         """
         # 获取商品
         product = db.query(Product).filter(Product.id == product_id).first()
         if not product:
             raise NotFoundError("商品不存在")
 
+        # 系统管理员可以删除所有商品，其他用户只能删除关联门店的商品
+        if user.role != 'system_admin':
+            user_store_ids = ProductService.get_user_stores(db, user.id)
+            if product.store_id not in user_store_ids:
+                raise ClientError("权限不足，无法删除此商品", "PERMISSION_DENIED")
+
         # 删除商品
         db.delete(product)
         db.commit()
 
     @staticmethod
-    def get_products_by_category(db: Session, category_id: str) -> list:
+    def get_products_by_category(db: Session, category_id: str, store_id: str = None, user = None) -> list:
         """
         按分类获取商品
 
         Args:
             db: 数据库会话
             category_id: 分类ID
+            store_id: 门店ID（可选），按门店过滤商品
+            user: 当前用户
 
         Returns:
             该分类下的商品列表
         """
-        products = db.query(Product).filter(
+        # 构建查询
+        query = db.query(Product).filter(
             Product.category_id == category_id,
             Product.status == 'active'
-        ).all()
+        )
+        
+        # 系统管理员和顾客可以查看所有商品，其他用户只能查看关联门店的商品
+        if user and user.role not in ['system_admin', 'customer']:
+            user_store_ids = ProductService.get_user_stores(db, user.id)
+            if user_store_ids:
+                query = query.filter(Product.store_id.in_(user_store_ids))
+            else:
+                # 如果用户没有关联门店，返回空列表
+                query = query.filter(Product.store_id.in_([]))
+        
+        # 门店过滤
+        if store_id:
+            query = query.filter(Product.store_id == store_id)
+        
+        products = query.all()
         return [
             {
                 "id": product.id,

@@ -14,10 +14,11 @@ from fastapi_pagination import Page, Params
 inventory_router = APIRouter(prefix='/inventory', tags=['inventory'])
 
 
-@inventory_router.get('/', response_model=Page[InventoryResponse])
+@inventory_router.get('', response_model=Page[InventoryResponse])
 async def get_inventories(
         params: Params = Depends(),
         search: str = None,
+        user: User = Depends(require_role('inventory_manager')),
         db: Session = Depends(get_db)
 ):
     """
@@ -26,17 +27,19 @@ async def get_inventories(
     Args:
         params: 分页参数
         search: 搜索关键词（可选），支持搜索商品名称、品牌、条码
+        user: 当前用户
         db: 数据库会话
 
     Returns:
         库存列表（分页）
     """
-    return InventoryService.get_inventories(db, params, search)
+    return InventoryService.get_inventories(db, params, search, user)
 
 
 @inventory_router.get('/{product_id}', response_model=InventoryResponse)
 async def get_inventory(
         product_id: str,
+        user: User = Depends(require_role('inventory_manager')),
         db: Session = Depends(get_db)
 ):
     """
@@ -44,12 +47,13 @@ async def get_inventory(
 
     Args:
         product_id: 商品ID
+        user: 当前用户
         db: 数据库会话
 
     Returns:
         商品库存信息
     """
-    inventory = InventoryService.get_inventory(db, product_id)
+    inventory = InventoryService.get_inventory(db, product_id, user)
     return InventoryResponse(**inventory)
 
 

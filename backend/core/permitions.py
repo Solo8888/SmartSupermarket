@@ -2,12 +2,12 @@
 # 提供统一的用户验证和权限检查依赖注入
 
 from typing import Optional, Callable
-from sqlalchemy.orm import Session
+
 from fastapi import Header, Depends
+from sqlalchemy.orm import Session
 
 from core.auth import JWTHandler
 from core.exceptions import UnauthorizedError, ClientError
-from core.logger import logger
 from models import User, get_db
 
 # 角色权重级别（用于权限判断）

@@ -1,9 +1,10 @@
 # 用户模块数据模型
 # 定义用户相关的请求和响应数据模型
 
-from pydantic import BaseModel, Field, EmailStr
-from typing import Optional, List
 from datetime import datetime
+from typing import List
+
+from pydantic import BaseModel, Field
 
 
 # 认证相关模型

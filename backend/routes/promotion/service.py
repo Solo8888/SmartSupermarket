@@ -1,13 +1,14 @@
 # 促销活动服务
 # 处理促销活动相关的业务逻辑
 
-from sqlalchemy.orm import Session
-from models.promotion import Promotion
-from .schemas import PromotionCreate
 from fastapi_pagination import Page, Params
 from fastapi_pagination.ext.sqlalchemy import paginate as sqlalchemy_paginate
-from core.exceptions import NotFoundError
 from sqlalchemy import func
+from sqlalchemy.orm import Session
+
+from core.exceptions import NotFoundError
+from models.promotion import Promotion
+from .schemas import PromotionCreate
 
 
 class PromotionService:
@@ -121,7 +122,6 @@ class PromotionService:
         Raises:
             NotFoundError: 促销活动不存在
         """
-        from .schemas import PromotionUpdate
 
         # 获取促销活动
         promotion = db.query(Promotion).filter(Promotion.id == promotion_id).first()

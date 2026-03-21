@@ -1,9 +1,11 @@
 # 促销活动模型
 # 定义促销活动相关的数据库模型
 import uuid
-from sqlalchemy import Column, Integer, String, Text, Enum, ForeignKey, DateTime, Numeric, Boolean
+
+from sqlalchemy import Column, String, Text, Enum, DateTime, Numeric, Boolean
 from sqlalchemy.dialects.mysql import CHAR
 from sqlalchemy.sql import func
+
 from . import Base
 
 

@@ -3,7 +3,6 @@
 
 import logging
 import os
-from config import settings
 
 # 创建日志目录
 log_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'logs')

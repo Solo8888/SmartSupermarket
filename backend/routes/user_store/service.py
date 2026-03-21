@@ -2,12 +2,12 @@
 # 处理门店分配相关的业务逻辑
 
 from sqlalchemy.orm import Session
-from models.user_store import UserStore
-from models.user import User
-from models.store import Store
-from .schemas import StoreAllocationCreate
+
 from core.exceptions import NotFoundError, ClientError
-from sqlalchemy import func
+from models.store import Store
+from models.user import User
+from models.user_store import UserStore
+from .schemas import StoreAllocationCreate
 
 
 class UserStoreService:

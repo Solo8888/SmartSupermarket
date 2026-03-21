@@ -13,7 +13,7 @@ from typing import Optional
 order_router = APIRouter(prefix='/orders', tags=['orders'])
 
 
-@order_router.post('/', response_model=OrderResponse)
+@order_router.post('', response_model=OrderResponse)
 async def create_order(
         payload: OrderCreate,
         user: User = Depends(require_role('customer')),
@@ -34,7 +34,7 @@ async def create_order(
     return OrderResponse(**order)
 
 
-@order_router.get('/', response_model=Page[OrderResponse])
+@order_router.get('', response_model=Page[OrderResponse])
 async def get_orders(
         params: Params = Depends(),
         status: Optional[str] = Query(None, description="订单状态筛选"),

@@ -11,7 +11,7 @@ from .service import UserStoreService
 user_store_router = APIRouter(prefix='/user-store', tags=['user-store'])
 
 
-@user_store_router.post('/', response_model=StoreAllocationResponse)
+@user_store_router.post('', response_model=StoreAllocationResponse)
 async def create_store_allocation(
         payload: StoreAllocationCreate,
         user: User = Depends(require_role('system_admin', mode='eq')),

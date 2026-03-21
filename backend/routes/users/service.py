@@ -1,12 +1,14 @@
 # 用户模块服务
 # 提供用户相关的业务逻辑
 
-from sqlalchemy.orm import Session
-from models.user import User
-from core.auth import JWTHandler
-from passlib.context import CryptContext
+from typing import Dict, Any
+
 from fastapi import HTTPException, status
-from typing import Dict, Any, List, Optional
+from passlib.context import CryptContext
+from sqlalchemy.orm import Session
+
+from core.auth import JWTHandler
+from models.user import User
 
 
 class AuthService:
@@ -69,6 +71,14 @@ class AuthService:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="该手机号已被注册",
+            )
+        
+        # 检查用户名是否已存在
+        existing_username = db.query(User).filter(User.username == username).first()
+        if existing_username:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="该用户名已被使用",
             )
         
         # 创建新用户
@@ -140,7 +150,7 @@ class UserService:
             user_responses.append({
                 "id": str(user.id),
                 "username": user.username,
-                "phone": user.phone,
+                "phone": user.phone or "",
                 "role": user.role,
                 "is_active": user.status == 'active',
                 "created_at": user.created_at
@@ -179,7 +189,7 @@ class UserService:
         return {
             "id": str(user.id),
             "username": user.username,
-            "phone": user.phone,
+            "phone": user.phone or "",
             "role": user.role,
             "is_active": user.status == 'active',
             "created_at": user.created_at

@@ -24,6 +24,6 @@ export const deleteProduct = (id) => {
   return request.delete(`/products/${id}`)
 }
 
-export const getProductsByCategory = (categoryId) => {
-  return request.get(`/products/category/${categoryId}`)
+export const getProductsByCategory = (categoryId, params) => {
+  return request.get(`/products/category/${categoryId}`, { params })
 }

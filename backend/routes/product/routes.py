@@ -13,7 +13,7 @@ from fastapi_pagination import Page, Params
 product_router = APIRouter(prefix='/products', tags=['products'])
 
 
-@product_router.post('/', response_model=ProductResponse)
+@product_router.post('', response_model=ProductResponse)
 async def create_product(
         payload: ProductCreate,
         user: User = Depends(require_role('inventory_manager')),
@@ -34,10 +34,12 @@ async def create_product(
     return ProductResponse(**product)
 
 
-@product_router.get('/', response_model=Page[ProductResponse])
+@product_router.get('', response_model=Page[ProductResponse])
 async def get_products(
         params: Params = Depends(),
         search: str = None,
+        store_id: str = None,
+        user: User = Depends(require_role(['inventory_manager', 'customer'], mode='in')),
         db: Session = Depends(get_db)
 ):
     """
@@ -46,33 +48,38 @@ async def get_products(
     Args:
         params: 分页参数
         search: 搜索关键词（可选），支持搜索商品名称、品牌、条码
+        store_id: 门店ID（可选），按门店过滤商品
+        user: 当前用户
         db: 数据库会话
 
     Returns:
         商品列表（分页）
     """
-    return ProductService.get_products(db, params, search)
+    return ProductService.get_products(db, params, search, store_id, user)
 
 
 @product_router.get('/all')
 async def get_all_products(
+        user: User = Depends(require_role('inventory_manager')),
         db: Session = Depends(get_db)
 ):
     """
     获取所有商品接口（不分页）
 
     Args:
+        user: 当前用户
         db: 数据库会话
 
     Returns:
         所有商品列表
     """
-    return ProductService.get_all_products(db)
+    return ProductService.get_all_products(db, user)
 
 
 @product_router.get('/{product_id}', response_model=ProductResponse)
 async def get_product(
         product_id: str,
+        user: User = Depends(require_role(['inventory_manager', 'customer'], mode='in')),
         db: Session = Depends(get_db)
 ):
     """
@@ -80,12 +87,13 @@ async def get_product(
 
     Args:
         product_id: 商品ID
+        user: 当前用户
         db: 数据库会话
 
     Returns:
         商品详情
     """
-    product = ProductService.get_product(db, product_id)
+    product = ProductService.get_product(db, product_id, user)
     return ProductResponse(**product)
 
 
@@ -132,6 +140,8 @@ async def delete_product(
 @product_router.get('/category/{category_id}')
 async def get_products_by_category(
         category_id: str,
+        store_id: str = None,
+        user: User = Depends(require_role(['inventory_manager', 'customer'], mode='in')),
         db: Session = Depends(get_db)
 ):
     """
@@ -139,10 +149,12 @@ async def get_products_by_category(
 
     Args:
         category_id: 分类ID
+        store_id: 门店ID（可选），按门店过滤商品
+        user: 当前用户
         db: 数据库会话
 
     Returns:
         该分类下的商品列表
     """
-    return ProductService.get_products_by_category(db, category_id)
+    return ProductService.get_products_by_category(db, category_id, store_id, user)
 

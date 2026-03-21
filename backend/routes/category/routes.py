@@ -13,7 +13,7 @@ from typing import List
 category_router = APIRouter(prefix='/categories', tags=['categories'])
 
 
-@category_router.post('/', response_model=CategoryResponse)
+@category_router.post('', response_model=CategoryResponse)
 async def create_category(
         payload: CategoryCreate,
         user: User = Depends(require_role('inventory_manager')),
@@ -34,9 +34,10 @@ async def create_category(
     return CategoryResponse(**category)
 
 
-@category_router.get('/', response_model=Page[CategoryResponse])
+@category_router.get('', response_model=Page[CategoryResponse])
 async def get_categories(
         params: Params = Depends(),
+        user: User = Depends(require_role('inventory_manager')),
         db: Session = Depends(get_db)
 ):
     """
@@ -44,34 +45,38 @@ async def get_categories(
 
     Args:
         params: 分页参数
+        user: 当前用户
         db: 数据库会话
 
     Returns:
         商品类别列表（分页）
     """
-    return CategoryService.get_categories(db, params)
+    return CategoryService.get_categories(db, params, user)
 
 
 @category_router.get('/all', response_model=List[CategoryResponse])
 async def get_all_categories(
+        user: User = Depends(require_role(['inventory_manager', 'customer'], mode='in')),
         db: Session = Depends(get_db)
 ):
     """
     获取所有商品类别接口（不分页）
 
     Args:
+        user: 当前用户
         db: 数据库会话
 
     Returns:
         所有商品类别列表
     """
-    categories = CategoryService.get_all_categories(db)
+    categories = CategoryService.get_all_categories(db, user)
     return [CategoryResponse(**cat) for cat in categories]
 
 
 @category_router.get('/{category_id}', response_model=CategoryResponse)
 async def get_category(
         category_id: str,
+        user: User = Depends(require_role('inventory_manager')),
         db: Session = Depends(get_db)
 ):
     """
@@ -79,12 +84,13 @@ async def get_category(
 
     Args:
         category_id: 商品类别ID
+        user: 当前用户
         db: 数据库会话
 
     Returns:
         商品类别详情
     """
-    category = CategoryService.get_category(db, category_id)
+    category = CategoryService.get_category(db, category_id, user)
     return CategoryResponse(**category)
 
 

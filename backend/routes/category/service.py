@@ -7,11 +7,26 @@ from models.user_store import UserStore
 from .schemas import CategoryCreate, CategoryUpdate
 from fastapi_pagination import Page, Params
 from fastapi_pagination.ext.sqlalchemy import paginate as sqlalchemy_paginate
-from core.exceptions import NotFoundError
+from core.exceptions import NotFoundError, ClientError
 from sqlalchemy import func
 
 
 class CategoryService:
+    @staticmethod
+    def get_user_stores(db: Session, user_id: str):
+        """
+        获取用户关联的门店ID列表
+
+        Args:
+            db: 数据库会话
+            user_id: 用户ID
+
+        Returns:
+            门店ID列表
+        """
+        user_stores = db.query(UserStore).filter(UserStore.user_id == user_id).all()
+        return [user_store.store_id for user_store in user_stores]
+
     @staticmethod
     def create_category(db: Session, payload: CategoryCreate, user) -> dict:
         """
@@ -63,32 +78,57 @@ class CategoryService:
         }
 
     @staticmethod
-    def get_categories(db: Session, params: Params) -> Page[Category]:
+    def get_categories(db: Session, params: Params, user = None) -> Page[Category]:
         """
         获取商品类别列表
 
         Args:
             db: 数据库会话
             params: 分页参数
+            user: 当前用户
 
         Returns:
             商品类别列表（分页）
         """
+        # 构建查询
         query = db.query(Category).order_by(Category.sort_order.asc(), Category.id.asc())
+        
+        # 系统管理员和顾客可以查看所有类别，其他用户只能查看关联门店的类别
+        if user and user.role not in ['system_admin', 'customer']:
+            user_store_ids = CategoryService.get_user_stores(db, user.id)
+            if user_store_ids:
+                query = query.filter(Category.store_id.in_(user_store_ids))
+            else:
+                # 如果用户没有关联门店，返回空列表
+                query = query.filter(Category.store_id.in_([]))
+        
         return sqlalchemy_paginate(query, params=params)
     
     @staticmethod
-    def get_all_categories(db: Session) -> list:
+    def get_all_categories(db: Session, user = None) -> list:
         """
         获取所有商品类别（不分页）
 
         Args:
             db: 数据库会话
+            user: 当前用户
 
         Returns:
             所有商品类别列表
         """
-        categories = db.query(Category).order_by(Category.sort_order.asc(), Category.id.asc()).all()
+        # 构建查询
+        query = db.query(Category).order_by(Category.sort_order.asc(), Category.id.asc())
+        
+        # 系统管理员和顾客可以查看所有类别，其他用户只能查看关联门店的类别
+        if user and user.role not in ['system_admin', 'customer']:
+            user_store_ids = CategoryService.get_user_stores(db, user.id)
+            if user_store_ids:
+                query = query.filter(Category.store_id.in_(user_store_ids))
+            else:
+                # 如果用户没有关联门店，返回空列表
+                query = query.filter(Category.store_id.in_([]))
+        
+        categories = query.all()
         return [
             {
                 "id": cat.id,
@@ -104,23 +144,32 @@ class CategoryService:
         ]
 
     @staticmethod
-    def get_category(db: Session, category_id: str) -> dict:
+    def get_category(db: Session, category_id: str, user = None) -> dict:
         """
         获取单个商品类别详情
 
         Args:
             db: 数据库会话
             category_id: 商品类别ID
+            user: 当前用户
 
         Returns:
             商品类别详情
 
         Raises:
             NotFoundError: 商品类别不存在
+            ClientError: 权限不足
         """
+        # 获取商品类别
         category = db.query(Category).filter(Category.id == category_id).first()
         if not category:
             raise NotFoundError("商品类别不存在")
+        
+        # 系统管理员可以查看所有类别，其他用户只能查看关联门店的类别
+        if user and user.role != 'system_admin':
+            user_store_ids = CategoryService.get_user_stores(db, user.id)
+            if category.store_id not in user_store_ids:
+                raise ClientError("权限不足，无法查看此类别", "PERMISSION_DENIED")
 
         return {
             "id": category.id,
@@ -149,17 +198,28 @@ class CategoryService:
 
         Raises:
             NotFoundError: 商品类别不存在
+            ClientError: 权限不足
         """
         # 获取商品类别
         category = db.query(Category).filter(Category.id == category_id).first()
         if not category:
             raise NotFoundError("商品类别不存在")
+        
+        # 系统管理员可以更新所有类别，其他用户只能更新关联门店的类别
+        if user.role != 'system_admin':
+            user_store_ids = CategoryService.get_user_stores(db, user.id)
+            if category.store_id not in user_store_ids:
+                raise ClientError("权限不足，无法更新此类别", "PERMISSION_DENIED")
 
         # 检查父分类是否存在（如果提供了parent_id）
         if payload.parent_id is not None:
             parent_category = db.query(Category).filter(Category.id == payload.parent_id).first()
             if not parent_category:
                 raise ValueError("父分类不存在")
+            
+            # 检查父分类是否属于同一门店
+            if parent_category.store_id != category.store_id:
+                raise ValueError("父分类必须属于同一门店")
 
         # 更新字段（只更新提供的字段）
         update_data = payload.model_dump(exclude_unset=True)
@@ -195,11 +255,18 @@ class CategoryService:
 
         Raises:
             NotFoundError: 商品类别不存在
+            ClientError: 权限不足
         """
         # 获取商品类别
         category = db.query(Category).filter(Category.id == category_id).first()
         if not category:
             raise NotFoundError("商品类别不存在")
+        
+        # 系统管理员可以删除所有类别，其他用户只能删除关联门店的类别
+        if user.role != 'system_admin':
+            user_store_ids = CategoryService.get_user_stores(db, user.id)
+            if category.store_id not in user_store_ids:
+                raise ClientError("权限不足，无法删除此类别", "PERMISSION_DENIED")
 
         # 删除商品类别
         db.delete(category)

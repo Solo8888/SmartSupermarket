@@ -1,9 +1,9 @@
 # 门店分配数据模型
 # 定义门店分配相关的请求和响应数据模型
 
-from pydantic import BaseModel, Field
-from typing import Optional
 from datetime import datetime
+
+from pydantic import BaseModel, Field
 
 
 class StoreAllocationCreate(BaseModel):

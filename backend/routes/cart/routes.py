@@ -58,7 +58,7 @@ def add_to_cart(
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@cart_router.get("/", response_model=CartResponse)
+@cart_router.get("", response_model=CartResponse)
 def get_user_cart(
     db: Session = Depends(get_db),
     current_user_id: str = Depends(get_current_user_id)

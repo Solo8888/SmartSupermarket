@@ -12,7 +12,7 @@ from fastapi_pagination import Page, Params
 promotion_router = APIRouter(prefix='/promotions', tags=['promotions'])
 
 
-@promotion_router.post('/', response_model=PromotionResponse)
+@promotion_router.post('', response_model=PromotionResponse)
 async def create_promotion(
         payload: PromotionCreate,
         user: User = Depends(require_role('operations_manager')),
@@ -33,7 +33,7 @@ async def create_promotion(
     return PromotionResponse(**promotion)
 
 
-@promotion_router.get('/', response_model=Page[PromotionResponse])
+@promotion_router.get('', response_model=Page[PromotionResponse])
 async def get_promotions(
         params: Params = Depends(),
         db: Session = Depends(get_db)

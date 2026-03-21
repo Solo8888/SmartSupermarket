@@ -80,7 +80,10 @@ const formatPrice = (price) => {
 
 const getProductImage = (product) => {
   if (product.product_image) {
-    return product.product_image
+    if (product.product_image.startsWith('http')) {
+      return product.product_image
+    }
+    return window.location.origin + product.product_image
   }
   return `https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=${encodeURIComponent(product.product_name || '商品')}&image_size=square`
 }

@@ -1,16 +1,25 @@
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import * as categoryApi from '../../api/category'
 import * as productApi from '../../api/product'
 import * as cartApi from '../../api/cart'
+import * as storeApi from '../../api/store'
+import { useStoreStore } from '../../stores/store'
 
+const storeStore = useStoreStore()
 const categories = ref([])
 const products = ref([])
+const cartItems = ref([])
 const loading = ref(false)
 const selectedCategory = ref(null)
 const selectedLevel1Category = ref(null)
 const selectedLevel2Category = ref(null)
+const showStoreDropdown = ref(false)
+
+// 从store中获取选中的门店和门店列表
+const selectedStore = computed(() => storeStore.selectedStore)
+const stores = computed(() => storeStore.stores)
 
 // 计算一级分类
 const level1Categories = computed(() => {
@@ -28,6 +37,17 @@ const level3Categories = computed(() => {
   if (!selectedLevel2Category.value) return []
   return categories.value.filter(cat => cat.parent_id === selectedLevel2Category.value.id)
 })
+
+// 获取购物车中商品的数量
+const getProductQuantity = (productId) => {
+  const item = cartItems.value.find(item => item.product_id === productId)
+  return item ? item.quantity : 0
+}
+
+// 商品是否在购物车中
+const isInCart = (productId) => {
+  return getProductQuantity(productId) > 0
+}
 
 const fetchCategories = async () => {
   loading.value = true
@@ -53,16 +73,42 @@ const fetchCategories = async () => {
   }
 }
 
+const fetchStores = async () => {
+  try {
+    const response = await storeApi.getAllStores()
+    storeStore.setStores(response || [])
+    // 默认选择第一个门店
+    if (stores.value.length > 0 && !selectedStore.value) {
+      storeStore.setSelectedStore(stores.value[0])
+    }
+  } catch (err) {
+    console.error('获取门店列表失败:', err)
+  }
+}
+
 const fetchProductsByCategory = async (categoryId) => {
   loading.value = true
   try {
-    const response = await productApi.getProductsByCategory(categoryId)
+    const params = {}
+    if (selectedStore.value) {
+      params.store_id = selectedStore.value.id
+    }
+    const response = await productApi.getProductsByCategory(categoryId, params)
     products.value = response || []
   } catch (err) {
     console.error('获取商品失败:', err)
     ElMessage.error('获取商品失败，请稍后重试')
   } finally {
     loading.value = false
+  }
+}
+
+const fetchCart = async () => {
+  try {
+    const response = await cartApi.getCartItems()
+    cartItems.value = response.items || []
+  } catch (err) {
+    console.error('获取购物车失败:', err)
   }
 }
 
@@ -98,14 +144,36 @@ const addToCart = async (product) => {
       quantity: 1
     })
     ElMessage.success('已添加到购物车')
+    // 更新购物车数据
+    await fetchCart()
+    // 通知父组件更新购物车
+    emit('update:cart')
   } catch (err) {
     console.error('添加到购物车失败:', err)
     ElMessage.error('添加到购物车失败，请稍后重试')
   }
 }
 
-onMounted(() => {
+const toggleStoreDropdown = () => {
+  showStoreDropdown.value = !showStoreDropdown.value
+}
+
+const selectStore = (store) => {
+  storeStore.setSelectedStore(store)
+  showStoreDropdown.value = false
+  // 如果已经选择了分类，重新获取商品
+  if (selectedCategory.value) {
+    fetchProductsByCategory(selectedCategory.value.id)
+  }
+}
+
+// 定义emit
+const emit = defineEmits(['update:cart'])
+
+onMounted(async () => {
+  await fetchStores()
   fetchCategories()
+  fetchCart()
 })
 </script>
 
@@ -113,6 +181,24 @@ onMounted(() => {
   <div class="categories-page">
     <div class="page-header">
       <h3>商品分类</h3>
+      <!-- 门店选择区域 -->
+      <div class="store-selector">
+        <div class="store-dropdown" @click="toggleStoreDropdown">
+          <span class="store-name">{{ selectedStore?.name || '选择门店' }}</span>
+          <span class="dropdown-arrow">{{ showStoreDropdown ? '▼' : '▶' }}</span>
+        </div>
+        <div v-if="showStoreDropdown" class="store-dropdown-menu">
+          <div 
+            v-for="store in stores" 
+            :key="store.id"
+            class="store-item"
+            :class="{ active: selectedStore?.id === store.id }"
+            @click="selectStore(store)"
+          >
+            {{ store.name }}
+          </div>
+        </div>
+      </div>
     </div>
     
     <!-- 上半部分：一级分类（水平滚动） -->
@@ -173,15 +259,16 @@ onMounted(() => {
           <div v-else class="products-list-view">
           <div v-for="product in products" :key="product.id" class="product-item">
             <div class="product-image">
-              <img :src="product.image_url" :alt="product.name" />
+              <img :src="product.image_url && product.image_url.startsWith('http') ? product.image_url : (product.image_url ? window.location.origin + product.image_url : 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=' + encodeURIComponent(product.name || '商品') + '&image_size=square')" :alt="product.name" />
             </div>
             <div class="product-info">
               <h4 class="product-name">{{ product.name }}</h4>
               <p class="product-price">¥{{ product.price.toFixed(2) }}</p>
             </div>
             <div class="product-actions">
-              <button class="add-to-cart-btn" @click="addToCart(product)">
+              <button class="add-to-cart-btn" @click="addToCart(product)" :class="{ 'in-cart': isInCart(product.id) }">
                 🛒
+                <span v-if="isInCart(product.id)" class="cart-badge">{{ getProductQuantity(product.id) }}</span>
               </button>
             </div>
           </div>
@@ -194,11 +281,17 @@ onMounted(() => {
 
 <style scoped>
 .categories-page {
-  padding: 16px;
+  padding: 0;
 }
 
 .page-header {
-  margin-bottom: 20px;
+  padding: 16px;
+  margin-bottom: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
 }
 
 .page-header h3 {
@@ -208,13 +301,92 @@ onMounted(() => {
   font-weight: 600;
 }
 
+/* 门店选择器样式 */
+.store-selector {
+  position: relative;
+}
+
+.store-dropdown {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 18px;
+  background: white;
+  cursor: pointer;
+  font-size: 13px;
+  color: #374151;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s;
+  min-width: 120px;
+}
+
+.store-dropdown:hover {
+  border-color: #3b82f6;
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.1);
+}
+
+.store-name {
+  font-weight: 500;
+}
+
+.dropdown-arrow {
+  font-size: 11px;
+  color: #6b7280;
+  transition: transform 0.2s;
+  margin-left: 6px;
+}
+
+.store-dropdown-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  margin-top: 4px;
+  max-height: 180px;
+  overflow-y: auto;
+  z-index: 1000;
+  min-width: 180px;
+}
+
+.store-item {
+  padding: 10px 16px;
+  cursor: pointer;
+  font-size: 13px;
+  color: #374151;
+  transition: all 0.2s;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.store-item:last-child {
+  border-bottom: none;
+  border-radius: 0 0 12px 12px;
+}
+
+.store-item:hover {
+  background-color: #f3f4f6;
+  color: #3b82f6;
+}
+
+.store-item.active {
+  background-color: #e0f2fe;
+  color: #0284c7;
+  font-weight: 600;
+}
+
 .category-nav {
   display: flex;
   gap: 12px;
   overflow-x: auto;
-  padding: 12px 0;
-  margin-bottom: 16px;
+  padding: 12px 16px;
+  margin-bottom: 0;
   scrollbar-width: none;
+  background: white;
+  border-bottom: 1px solid #f3f4f6;
 }
 
 .category-nav::-webkit-scrollbar {
@@ -250,18 +422,20 @@ onMounted(() => {
 
 .content {
   display: flex;
-  gap: 16px;
+  gap: 0;
   min-height: 400px;
-  max-height: calc(100vh - 240px);
+  max-height: calc(100vh - 200px);
+  background: white;
 }
 
 /* 二级分类样式 */
 .level2-categories {
-  width: 120px;
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  width: 30%;
+  max-width: 100px;
+  background: #f9fafb;
+  border-right: 1px solid #f3f4f6;
   overflow-y: auto;
+  padding: 0;
 }
 
 .level2-item {
@@ -274,7 +448,7 @@ onMounted(() => {
 }
 
 .level2-item:hover {
-  background-color: #f9fafb;
+  background-color: #f3f4f6;
   color: #3b82f6;
 }
 
@@ -294,11 +468,10 @@ onMounted(() => {
 
 .products-wrapper {
   flex: 1;
+  flex-basis: 70%;
   display: flex;
   flex-direction: column;
   background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
   overflow: hidden;
 }
 
@@ -310,6 +483,7 @@ onMounted(() => {
   padding: 12px 16px;
   border-bottom: 1px solid #f3f4f6;
   scrollbar-width: none;
+  background: white;
 }
 
 .level3-categories::-webkit-scrollbar {
@@ -418,6 +592,7 @@ onMounted(() => {
 
 .product-actions {
   flex-shrink: 0;
+  position: relative;
 }
 
 .add-to-cart-btn {
@@ -434,6 +609,7 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
+  position: relative;
 }
 
 .add-to-cart-btn:hover {
@@ -446,31 +622,43 @@ onMounted(() => {
   transform: scale(0.95);
 }
 
+.add-to-cart-btn.in-cart {
+  background: #3b82f6;
+  color: white;
+}
+
+.cart-badge {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background: #ef4444;
+  color: white;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 10px;
+  min-width: 16px;
+  text-align: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
 @media (max-width: 480px) {
   .content {
     height: calc(100vh - 160px);
   }
   
-  .categories-list {
-    width: 100px;
+  .level2-categories {
+    width: 90px;
   }
   
   .category-item {
-    padding: 12px;
+    padding: 8px 12px;
     font-size: 13px;
   }
   
-  .products-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
-  }
-  
   .product-image {
-    height: 100px;
-  }
-  
-  .product-info {
-    padding: 10px;
+    width: 60px;
+    height: 60px;
   }
   
   .product-name {
@@ -479,6 +667,12 @@ onMounted(() => {
   
   .product-price {
     font-size: 14px;
+  }
+  
+  .add-to-cart-btn {
+    width: 28px;
+    height: 28px;
+    font-size: 12px;
   }
 }
 </style>

@@ -13,7 +13,7 @@ from typing import List
 store_router = APIRouter(prefix='/stores', tags=['门店路由'])
 
 
-@store_router.post('/', response_model=StoreResponse)
+@store_router.post('', response_model=StoreResponse)
 async def create_store(
         payload: StoreCreate,
         user: User = Depends(require_role('system_admin', mode='eq')),
@@ -34,7 +34,7 @@ async def create_store(
     return StoreResponse(**store)
 
 
-@store_router.get('/', response_model=Page[StoreResponse])
+@store_router.get('', response_model=Page[StoreResponse])
 async def get_stores(
         params: Params = Depends(),
         db: Session = Depends(get_db)
