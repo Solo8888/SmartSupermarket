@@ -17,6 +17,11 @@
           <span class="menu-text">我的订单</span>
           <span class="menu-arrow">›</span>
         </div>
+        <div class="menu-item" @click="goToAddressBook">
+          <span class="menu-icon">📍</span>
+          <span class="menu-text">地址管理</span>
+          <span class="menu-arrow">›</span>
+        </div>
       </div>
       
       <div class="menu-section">
@@ -58,6 +63,11 @@ const userAvatar = computed(() => {
 // 导航到订单页面
 const goToOrders = () => {
   router.push('/customer/orders')
+}
+
+// 导航到地址管理页面
+const goToAddressBook = () => {
+  router.push('/customer/address-book')
 }
 
 // 打开设置页面

@@ -106,6 +106,12 @@ const routes = [
         name: 'Profile',
         component: () => import('../views/customer/Profile.vue'),
         meta: { title: '我的', requiresRole: 'customer' }
+      },
+      {
+        path: 'address-book',
+        name: 'AddressBook',
+        component: () => import('../views/customer/AddressBook.vue'),
+        meta: { title: '地址管理', requiresRole: 'customer' }
       }
     ]
   }
