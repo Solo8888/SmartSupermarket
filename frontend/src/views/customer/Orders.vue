@@ -26,7 +26,7 @@
     <div v-else class="order-list">
       <div v-for="order in filteredOrders" :key="order.id" class="order-card">
         <div class="order-header">
-          <span class="order-id">订单号: {{ order.id }}</span>
+          <span class="order-id">订单号: {{ order.order_no || order.orderNo || order.id }}</span>
           <span class="order-status" :class="getStatusClass(order.status)">
             {{ getStatusText(order.status) }}
           </span>
@@ -35,10 +35,10 @@
         <div class="order-items">
           <div v-for="item in order.items" :key="item.id" class="order-item">
             <div class="item-image">
-              <img :src="getProductImage(item)" :alt="item.productName" />
+              <img :src="getProductImage(item)" :alt="item.product_name || item.productName" />
             </div>
             <div class="item-info">
-              <div class="item-name">{{ item.productName }}</div>
+              <div class="item-name">{{ item.product_name || item.productName }}</div>
               <div class="item-meta">
                 <span>¥{{ formatPrice(item.price) }}</span>
                 <span>× {{ item.quantity }}</span>
@@ -49,8 +49,8 @@
         
         <div class="order-footer">
           <div class="order-total">
-            共 {{ order.items.length }} 件 合计: 
-            <span class="total-price">¥{{ formatPrice(order.totalAmount) }}</span>
+            共 {{ order.items?.length || 0 }} 件 合计: 
+            <span class="total-price">¥{{ formatPrice(order.total_amount || order.totalAmount) }}</span>
           </div>
           <div class="order-actions">
             <button 
@@ -59,6 +59,20 @@
               @click="payOrder(order)"
             >
               立即支付
+            </button>
+            <button 
+              v-if="order.status === 'paid'" 
+              class="action-btn confirm-btn"
+              @click="confirmOrder(order)"
+            >
+              确认收货
+            </button>
+            <button 
+              v-if="order.status === 'shipped'" 
+              class="action-btn review-btn"
+              @click="reviewOrder(order)"
+            >
+              评价订单
             </button>
             <button 
               v-if="order.status === 'pending' || order.status === 'paid'" 
@@ -82,13 +96,18 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import * as orderApi from '../../api/order'
+
+const router = useRouter()
 
 const tabs = [
   { label: '全部', value: 'all' },
   { label: '待支付', value: 'pending' },
-  { label: '已支付', value: 'paid' },
-  { label: '已发货', value: 'shipped' },
+  { label: '待发货', value: 'paid' },
+  { label: '待收货', value: 'shipped' },
+  { label: '待评价', value: 'review' },
   { label: '已完成', value: 'completed' }
 ]
 
@@ -99,6 +118,9 @@ const loading = ref(false)
 const filteredOrders = computed(() => {
   if (activeTab.value === 'all') {
     return orders.value
+  } else if (activeTab.value === 'review') {
+    // 待评价标签显示已收货状态的订单
+    return orders.value.filter(order => order.status === 'delivered')
   }
   return orders.value.filter(order => order.status === activeTab.value)
 })
@@ -108,14 +130,22 @@ const formatPrice = (price) => {
 }
 
 const getProductImage = (item) => {
-  return `https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=${encodeURIComponent(item.productName || '商品')}&image_size=square`
+  const productName = item.product_name || item.productName || '商品'
+  if (item.product_image || item.productImage) {
+    const imageUrl = item.product_image || item.productImage
+    if (imageUrl.startsWith('http')) {
+      return imageUrl
+    }
+    return window.location.origin + imageUrl
+  }
+  return `https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=${encodeURIComponent(productName)}&image_size=square`
 }
 
 const getStatusText = (status) => {
   const statusMap = {
     'pending': '待支付',
-    'paid': '已支付',
-    'shipped': '已发货',
+    'paid': '待发货',
+    'shipped': '待收货',
     'delivered': '已收货',
     'completed': '已完成',
     'cancelled': '已取消'
@@ -139,10 +169,11 @@ const loadOrders = async () => {
   loading.value = true
   try {
     const response = await orderApi.getOrders({ page: 1, size: 50 })
-    orders.value = response.data.orders || []
+    console.log('订单列表响应:', response)
+    orders.value = response.items || response.orders || response.data?.orders || []
   } catch (error) {
     console.error('加载订单失败:', error)
-    alert('加载订单失败')
+    ElMessage.error('加载订单失败')
   } finally {
     loading.value = false
   }
@@ -150,34 +181,91 @@ const loadOrders = async () => {
 
 const payOrder = async (order) => {
   try {
-    const confirmed = confirm(`确认支付订单 ${order.id}？金额: ¥${formatPrice(order.totalAmount)}`)
-    if (!confirmed) return
+    // 跳转到订单结算页面，带上订单ID
+    router.push({
+      name: 'OrderCheckout',
+      query: { 
+        orderId: order.id,
+        payMode: 'true'
+      }
+    })
+  } catch (error) {
+    console.error('跳转到支付页面失败:', error)
+    ElMessage.error('跳转到支付页面失败')
+  }
+}
+
+const confirmOrder = async (order) => {
+  try {
+    await ElMessageBox.confirm(
+      '确认已收到商品？',
+      '确认收货',
+      {
+        confirmButtonText: '确认',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }
+    )
     
-    await orderApi.payOrder(order.id, { paymentMethod: 'alipay' })
-    alert('支付成功')
+    await orderApi.updateOrderStatus(order.id, { status: 'delivered' })
+    ElMessage.success('确认收货成功')
     loadOrders()
   } catch (error) {
-    console.error('支付失败:', error)
-    alert('支付失败')
+    if (error !== 'cancel') {
+      console.error('确认收货失败:', error)
+      ElMessage.error('确认收货失败')
+    }
+  }
+}
+
+const reviewOrder = async (order) => {
+  try {
+    await ElMessageBox.confirm(
+      '订单评价功能开发中，先标记为已完成？',
+      '评价订单',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }
+    )
+    
+    await orderApi.updateOrderStatus(order.id, { status: 'completed' })
+    ElMessage.success('订单已完成')
+    loadOrders()
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('操作失败:', error)
+      ElMessage.error('操作失败')
+    }
   }
 }
 
 const cancelOrder = async (order) => {
   try {
-    const confirmed = confirm(`确认取消订单 ${order.id}？`)
-    if (!confirmed) return
+    await ElMessageBox.confirm(
+      `确认取消订单 ${order.orderNo || order.id}？`,
+      '取消订单',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }
+    )
     
     await orderApi.cancelOrder(order.id)
-    alert('订单已取消')
+    ElMessage.success('订单已取消')
     loadOrders()
   } catch (error) {
-    console.error('取消订单失败:', error)
-    alert('取消订单失败')
+    if (error !== 'cancel') {
+      console.error('取消订单失败:', error)
+      ElMessage.error('取消订单失败')
+    }
   }
 }
 
 const viewOrderDetail = (order) => {
-  alert('订单详情功能开发中...')
+  ElMessage.info('订单详情功能开发中...')
 }
 
 onMounted(() => {
@@ -368,6 +456,7 @@ onMounted(() => {
   display: flex;
   justify-content: flex-end;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 .action-btn {
@@ -376,12 +465,22 @@ onMounted(() => {
   font-size: 13px;
   cursor: pointer;
   transition: all 0.2s;
+  border: none;
 }
 
 .pay-btn {
   background-color: #ff4d4f;
   color: white;
-  border: none;
+}
+
+.confirm-btn {
+  background-color: #52c41a;
+  color: white;
+}
+
+.review-btn {
+  background-color: #722ed1;
+  color: white;
 }
 
 .cancel-btn {
@@ -394,5 +493,12 @@ onMounted(() => {
   background-color: white;
   color: #1890ff;
   border: 1px solid #1890ff;
+}
+
+@media (min-width: 768px) {
+  .orders-page {
+    max-width: 480px;
+    margin: 0 auto;
+  }
 }
 </style>

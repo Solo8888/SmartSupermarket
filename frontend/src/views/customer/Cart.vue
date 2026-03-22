@@ -38,16 +38,22 @@
       
       <div class="cart-summary">
         <div class="summary-content">
-          <div class="total-price">
-            <span>合计：</span>
-            <span class="price">¥{{ formatPrice(totalPrice) }}</span>
+          <div class="cart-info">
+            <div class="cart-items">
+              <span class="item-count">{{ totalQuantity }}</span>
+              <span class="item-label">件商品</span>
+            </div>
+            <div class="cart-total">
+              <span class="total-label">合计：</span>
+              <span class="total-price">¥{{ formatPrice(totalPrice) }}</span>
+            </div>
           </div>
           <button 
             class="checkout-btn" 
             @click="checkout"
             :disabled="cartItems.length === 0"
           >
-            结算 ({{ totalQuantity }})
+            结算
           </button>
         </div>
       </div>
@@ -145,12 +151,15 @@ const removeItem = async (itemId) => {
 }
 
 const checkout = () => {
-  if (cartItems.length === 0) {
+  if (cartItems.value.length === 0) {
     ElMessage.warning('购物车是空的')
     return
   }
-  // 实际应用中应该跳转到结算页面
-  alert('结算功能开发中...')
+  // 跳转到结算页面，传递购物车数据
+  router.push({
+    name: 'OrderCheckout',
+    state: { cartItems: cartItems.value }
+  })
 }
 
 onMounted(() => {
@@ -161,6 +170,7 @@ onMounted(() => {
 <style scoped>
 .cart-page {
   padding: 16px;
+  padding-bottom: 100px;
   min-height: 100vh;
   background-color: #f5f7fa;
 }
@@ -352,44 +362,70 @@ onMounted(() => {
 
 .cart-summary {
   position: fixed;
-  bottom: 0;
+  bottom: 60px; /* 导航栏高度 */
   left: 0;
   right: 0;
   background: white;
   box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.08);
-  z-index: 1000;
+  z-index: 999;
+  padding: 12px 16px;
 }
 
 .summary-content {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px;
   max-width: 480px;
   margin: 0 auto;
 }
 
-.total-price {
-  font-size: 16px;
-  color: #6b7280;
+.cart-info {
   display: flex;
-  align-items: baseline;
+  align-items: center;
+  gap: 20px;
+}
+
+.cart-items {
+  display: flex;
+  align-items: center;
   gap: 4px;
 }
 
-.total-price .price {
-  font-size: 22px;
+.item-count {
+  font-size: 16px;
+  font-weight: 600;
+  color: #3b82f6;
+}
+
+.item-label {
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.cart-total {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.total-label {
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.total-price {
+  font-size: 18px;
   font-weight: 600;
   color: #ef4444;
 }
 
 .checkout-btn {
-  padding: 12px 32px;
+  padding: 10px 24px;
   background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
   color: white;
   border: none;
   border-radius: 24px;
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;

@@ -16,6 +16,7 @@ class OrderItemCreate(BaseModel):
 class OrderCreate(BaseModel):
     """创建订单请求"""
     items: List[OrderItemCreate] = Field(..., description="订单项列表")
+    address_id: Optional[str] = Field(None, description="地址簿中的地址ID")
     shipping_address: Optional[str] = Field(None, description="收货地址")
     contact_name: Optional[str] = Field(None, description="联系人姓名", max_length=50)
     contact_phone: Optional[str] = Field(None, description="联系电话", max_length=20)
@@ -68,4 +69,4 @@ class OrderUpdateStatus(BaseModel):
 
 class OrderPay(BaseModel):
     """支付订单请求"""
-    payment_method: str = Field(..., description="支付方式", pattern="^(alipay|wechat)$")
+    payment_method: str = Field(..., description="支付方式", pattern="^(alipay|wechat|mock)$")

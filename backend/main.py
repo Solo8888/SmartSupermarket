@@ -15,6 +15,13 @@ app = FastAPI(
     debug=settings.debug,
 )
 
+# 添加响应头中间件，确保UTF-8编码
+@app.middleware("http")
+async def add_encoding_header(request, call_next):
+    response = await call_next(request)
+    response.headers["Content-Type"] = "application/json; charset=utf-8"
+    return response
+
 # 添加CORS中间件
 app.add_middleware(
     CORSMiddleware,

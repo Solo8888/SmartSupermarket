@@ -112,6 +112,18 @@ const routes = [
         name: 'AddressBook',
         component: () => import('../views/customer/AddressBook.vue'),
         meta: { title: '地址管理', requiresRole: 'customer' }
+      },
+      {
+        path: 'checkout',
+        name: 'OrderCheckout',
+        component: () => import('../views/customer/OrderCheckout.vue'),
+        meta: { title: '确认订单', requiresRole: 'customer' }
+      },
+      {
+        path: 'orders',
+        name: 'Orders',
+        component: () => import('../views/customer/Orders.vue'),
+        meta: { title: '我的订单', requiresRole: 'customer' }
       }
     ]
   }

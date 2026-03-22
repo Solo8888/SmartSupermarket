@@ -213,3 +213,26 @@ def update_cart_item(
     # 重新获取购物车，包含所有商品
     db.refresh(cart)
     return cart
+
+
+def clear_cart(db: Session, user_id: str) -> Cart:
+    """
+    清空购物车
+
+    Args:
+        db: 数据库会话
+        user_id: 用户ID
+
+    Returns:
+        清空后的购物车对象
+    """
+    # 获取用户购物车
+    cart = get_cart(db, user_id)
+
+    # 删除购物车中的所有商品
+    db.query(CartItem).filter(CartItem.cart_id == cart.id).delete()
+    db.commit()
+
+    # 重新获取购物车，包含所有商品
+    db.refresh(cart)
+    return cart

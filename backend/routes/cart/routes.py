@@ -7,7 +7,7 @@ from .schemas import (
     RemoveCartItemResponse, RemoveCartItemsRequest, CartItemUpdate
 )
 from .service import (
-    add_item_to_cart, get_cart, remove_cart_item, remove_cart_items, update_cart_item
+    add_item_to_cart, get_cart, remove_cart_item, remove_cart_items, update_cart_item, clear_cart
 )
 
 cart_router = APIRouter(
@@ -211,6 +211,46 @@ def remove_items(
 
         return RemoveCartItemResponse(
             message="商品已成功从购物车中删除",
+            cart=cart_response
+        )
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@cart_router.delete("", response_model=RemoveCartItemResponse)
+def clear_user_cart(
+    db: Session = Depends(get_db),
+    current_user_id: str = Depends(get_current_user_id)
+):
+    user_id = current_user_id
+
+    try:
+        cart = clear_cart(db, user_id)
+
+        cart_items = []
+        for cart_item in cart.cart_items:
+            cart_items.append(CartItemResponse(
+                id=cart_item.id,
+                cart_id=cart_item.cart_id,
+                product_id=cart_item.product_id,
+                product_name=cart_item.product_name,
+                product_image=cart_item.product_image,
+                price=cart_item.price,
+                quantity=cart_item.quantity,
+                created_at=cart_item.created_at,
+                updated_at=cart_item.updated_at
+            ))
+
+        cart_response = CartResponse(
+            id=cart.id,
+            user_id=cart.user_id,
+            items=cart_items,
+            created_at=cart.created_at,
+            updated_at=cart.updated_at
+        )
+
+        return RemoveCartItemResponse(
+            message="购物车已清空",
             cart=cart_response
         )
     except Exception as e:

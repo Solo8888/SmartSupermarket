@@ -41,6 +41,23 @@ class OrderService:
             创建成功的订单信息
         """
         from decimal import Decimal
+        from models.address_book import AddressBook
+
+        # 处理地址信息
+        shipping_address = payload.shipping_address
+        contact_name = payload.contact_name
+        contact_phone = payload.contact_phone
+
+        # 如果提供了地址ID，从地址簿中获取地址信息
+        if payload.address_id:
+            address = db.query(AddressBook).filter(
+                AddressBook.id == payload.address_id,
+                AddressBook.user_id == user.id
+            ).first()
+            if address:
+                shipping_address = f"{address.province}{address.city}{address.district}{address.detail_address}"
+                contact_name = address.recipient
+                contact_phone = address.phone
 
         # 生成订单编号
         order_no = OrderService.generate_order_no()
@@ -82,9 +99,9 @@ class OrderService:
             discount_amount=discount_amount,
             final_amount=final_amount,
             status='pending',
-            shipping_address=payload.shipping_address,
-            contact_name=payload.contact_name,
-            contact_phone=payload.contact_phone,
+            shipping_address=shipping_address,
+            contact_name=contact_name,
+            contact_phone=contact_phone,
             remark=payload.remark
         )
 
@@ -125,7 +142,7 @@ class OrderService:
         params: Params,
         user,
         status: Optional[str] = None
-    ) -> Page[Order]:
+    ) -> dict:
         """
         获取订单列表（分页）
 
@@ -136,8 +153,9 @@ class OrderService:
             status: 订单状态筛选（可选）
 
         Returns:
-            订单列表（分页）
+            订单列表（包含订单项）
         """
+        # 查询订单
         query = db.query(Order)
 
         # 普通用户只能查看自己的订单
@@ -151,7 +169,59 @@ class OrderService:
         # 按创建时间倒序排列
         query = query.order_by(Order.created_at.desc())
 
-        return sqlalchemy_paginate(query, params=params)
+        # 执行分页查询
+        page = sqlalchemy_paginate(query, params=params)
+
+        # 为每个订单添加订单项
+        orders_with_items = []
+        for order in page.items:
+            # 查询订单项
+            order_items = db.query(OrderItem).filter(OrderItem.order_id == order.id).all()
+
+            # 转换订单项为字典列表
+            items_dict = []
+            for item in order_items:
+                items_dict.append({
+                    "id": item.id,
+                    "order_id": item.order_id,
+                    "product_id": item.product_id,
+                    "product_name": item.product_name,
+                    "product_image": item.product_image,
+                    "price": item.price,
+                    "quantity": item.quantity,
+                    "subtotal": item.subtotal,
+                    "created_at": item.created_at
+                })
+
+            # 构建包含订单项的订单字典
+            order_dict = {
+                "id": order.id,
+                "order_no": order.order_no,
+                "user_id": order.user_id,
+                "total_amount": order.total_amount,
+                "discount_amount": order.discount_amount,
+                "final_amount": order.final_amount,
+                "status": order.status,
+                "payment_method": order.payment_method,
+                "payment_time": order.payment_time,
+                "shipping_address": order.shipping_address,
+                "contact_name": order.contact_name,
+                "contact_phone": order.contact_phone,
+                "remark": order.remark,
+                "created_at": order.created_at,
+                "updated_at": order.updated_at,
+                "items": items_dict
+            }
+            orders_with_items.append(order_dict)
+
+        # 返回包含订单项的分页数据
+        return {
+            "items": orders_with_items,
+            "total": page.total,
+            "page": page.page,
+            "size": page.size,
+            "pages": page.pages
+        }
 
     @staticmethod
     def get_order(db: Session, order_id: str, user) -> dict:
@@ -293,17 +363,30 @@ class OrderService:
 
         Raises:
             NotFoundError: 订单不存在
-            ValueError: 订单状态不合法
+            ValueError: 订单状态不合法或无权操作
         """
         # 查询订单
         order = db.query(Order).filter(Order.id == order_id).first()
         if not order:
             raise NotFoundError("订单不存在")
 
+        # 普通用户只能操作自己的订单
+        if user.role == 'customer' and order.user_id != user.id:
+            raise NotFoundError("订单不存在")
+
         # 验证状态合法性
         valid_statuses = ['pending', 'paid', 'shipped', 'completed', 'cancelled', 'refunded']
         if status not in valid_statuses:
             raise ValueError(f"无效的订单状态: {status}")
+
+        # 普通用户允许的状态转换
+        if user.role == 'customer':
+            allowed_transitions = {
+                'paid': ['shipped'],  # 已支付 -> 确认收货（待收货）
+                'shipped': ['completed']  # 待收货 -> 已完成（评价）
+            }
+            if order.status not in allowed_transitions or status not in allowed_transitions.get(order.status, []):
+                raise ValueError("当前订单状态不允许此操作")
 
         # 更新订单状态
         order.status = status

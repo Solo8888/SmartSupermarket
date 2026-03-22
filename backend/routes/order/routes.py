@@ -104,7 +104,7 @@ async def pay_order(
 async def update_order_status(
         order_id: str,
         payload: OrderUpdateStatus,
-        user: User = Depends(require_role(['inventory_manager', 'operations_manager'], mode='in')),
+        user: User = Depends(require_role(['customer', 'inventory_manager', 'operations_manager'], mode='in')),
         db: Session = Depends(get_db)
 ):
     """

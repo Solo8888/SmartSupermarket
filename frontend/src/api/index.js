@@ -33,6 +33,8 @@ request.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }
+    // 设置Content-Type为UTF-8
+    config.headers['Content-Type'] = 'application/json; charset=utf-8'
     return config
   },
   error => {
