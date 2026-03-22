@@ -5,7 +5,8 @@ from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi_pagination import add_pagination
 from core.exceptions import BusinessException, business_exception_handler, general_exception_handler
-from routes import user_router, category_router, product_router, upload_router, inventory_router, promotion_router, order_router, store_router, user_store_router, cart_router, address_router
+# from core.scheduler import start_scheduler, stop_scheduler
+from routes import user_router, category_router, product_router, upload_router, inventory_router, promotion_router, order_router, store_router, user_store_router, cart_router, address_router, review_router
 from models import init_db
 
 # 创建FastAPI应用实例
@@ -55,6 +56,7 @@ app.include_router(store_router)
 app.include_router(user_store_router)
 app.include_router(cart_router)
 app.include_router(address_router)
+app.include_router(review_router)
 
 # 挂载静态文件目录
 import os
@@ -69,6 +71,14 @@ add_pagination(app)
 async def startup_event():
     """应用启动时执行的初始化操作"""
     init_db()
+    # start_scheduler()
+
+
+# ======应用关闭事件======
+@app.on_event("shutdown")
+async def shutdown_event():
+    """应用关闭时执行的操作"""
+    # stop_scheduler()
 
 
 # ======健康检查路由======
