@@ -16,7 +16,7 @@ class Order(Base):
     total_amount = Column(Numeric(10, 2), nullable=False, comment='订单总金额')
     discount_amount = Column(Numeric(10, 2), default=0, nullable=False, comment='优惠金额')
     final_amount = Column(Numeric(10, 2), nullable=False, comment='实付金额')
-    status = Column(Enum('pending', 'paid', 'shipped', 'completed', 'cancelled', 'refunded'), default='pending', nullable=False, comment='订单状态')
+    status = Column(Enum('pending', 'paid', 'shipped', 'delivered', 'completed', 'cancelled', 'refunded'), default='pending', nullable=False, comment='订单状态')
     payment_method = Column(Enum('wechat', 'alipay', 'cash', 'card'), nullable=True, comment='支付方式')
     payment_time = Column(DateTime, nullable=True, comment='支付时间')
     shipping_address = Column(Text, nullable=True, comment='收货地址')

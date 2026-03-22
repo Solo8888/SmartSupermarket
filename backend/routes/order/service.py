@@ -375,15 +375,16 @@ class OrderService:
             raise NotFoundError("订单不存在")
 
         # 验证状态合法性
-        valid_statuses = ['pending', 'paid', 'shipped', 'completed', 'cancelled', 'refunded']
+        valid_statuses = ['pending', 'paid', 'shipped', 'delivered', 'completed', 'cancelled', 'refunded']
         if status not in valid_statuses:
             raise ValueError(f"无效的订单状态: {status}")
 
         # 普通用户允许的状态转换
         if user.role == 'customer':
             allowed_transitions = {
-                'paid': ['shipped'],  # 已支付 -> 确认收货（待收货）
-                'shipped': ['completed']  # 待收货 -> 已完成（评价）
+                'paid': ['shipped'],  # 已支付 -> 待收货（模拟发货）
+                'shipped': ['delivered'],  # 待收货 -> 已收货（确认收货）
+                'delivered': ['completed']  # 已收货 -> 已完成（评价）
             }
             if order.status not in allowed_transitions or status not in allowed_transitions.get(order.status, []):
                 raise ValueError("当前订单状态不允许此操作")

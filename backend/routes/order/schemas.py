@@ -64,7 +64,7 @@ class OrderResponse(BaseModel):
 
 class OrderUpdateStatus(BaseModel):
     """更新订单状态请求"""
-    status: str = Field(..., description="订单状态", pattern="^(pending|paid|shipped|completed|cancelled|refunded)$")
+    status: str = Field(..., description="订单状态", pattern="^(pending|paid|shipped|delivered|completed|cancelled|refunded)$")
 
 
 class OrderPay(BaseModel):

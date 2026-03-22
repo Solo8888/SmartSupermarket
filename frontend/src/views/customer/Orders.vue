@@ -54,28 +54,35 @@
           </div>
           <div class="order-actions">
             <button 
-              v-if="order.status === 'pending'" 
+              v-if="order.status === 'pending' " 
               class="action-btn pay-btn"
               @click="payOrder(order)"
             >
               立即支付
             </button>
             <button 
-              v-if="order.status === 'paid'" 
+              v-if="order.status === 'paid' " 
+              class="action-btn confirm-btn"
+              @click="simulateShip(order)"
+            >
+              模拟发货
+            </button>
+            <button 
+              v-if="order.status === 'shipped' " 
               class="action-btn confirm-btn"
               @click="confirmOrder(order)"
             >
               确认收货
             </button>
             <button 
-              v-if="order.status === 'shipped'" 
+              v-if="order.status === 'delivered' " 
               class="action-btn review-btn"
               @click="reviewOrder(order)"
             >
               评价订单
             </button>
             <button 
-              v-if="order.status === 'pending' || order.status === 'paid'" 
+              v-if="order.status === 'pending' || order.status === 'paid' " 
               class="action-btn cancel-btn"
               @click="cancelOrder(order)"
             >
@@ -192,6 +199,29 @@ const payOrder = async (order) => {
   } catch (error) {
     console.error('跳转到支付页面失败:', error)
     ElMessage.error('跳转到支付页面失败')
+  }
+}
+
+const simulateShip = async (order) => {
+  try {
+    await ElMessageBox.confirm(
+      '确认发货？',
+      '模拟发货',
+      {
+        confirmButtonText: '确认',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }
+    )
+    
+    await orderApi.updateOrderStatus(order.id, { status: 'shipped' })
+    ElMessage.success('发货成功')
+    loadOrders()
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('发货失败:', error)
+      ElMessage.error('发货失败')
+    }
   }
 }
 

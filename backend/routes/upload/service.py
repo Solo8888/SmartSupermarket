@@ -35,8 +35,10 @@ class UploadService:
             content = await file.read()
             buffer.write(content)
 
-        # 返回相对路径，让前端根据当前域名自行拼接
+        # 返回完整路径，支持内网穿透
+        from config import settings
+        base_url = settings.backend_url
         return {
-            'url': f"/uploads/images/{unique_filename}",
+            'url': f"{base_url}/uploads/images/{unique_filename}",
             'filename': unique_filename
         }

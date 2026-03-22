@@ -21,6 +21,9 @@ class Settings(BaseSettings):
     
     # 服务端口配置
     port: int = Field(default=5000, alias='PORT')
+    
+    # 后端穿透地址
+    backend_url: str = Field(default='http://localhost:5000', alias='BACKEND_URL')
 
     class Config:
         env_file = '.env'

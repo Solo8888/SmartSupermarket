@@ -10,7 +10,7 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': {
-        target: 'http://localhost:5000',
+        target: 'https://d07dd15.r18.vip.cpolar.cn',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, '')
       }
