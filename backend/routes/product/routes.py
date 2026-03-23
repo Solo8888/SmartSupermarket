@@ -34,7 +34,7 @@ async def create_product(
     return ProductResponse(**product)
 
 
-@product_router.get('', response_model=Page[ProductResponse])
+@product_router.get('')
 async def get_products(
         params: Params = Depends(),
         search: str = None,

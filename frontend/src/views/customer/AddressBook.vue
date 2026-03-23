@@ -1,7 +1,10 @@
 <script setup>
 import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage, ElDialog } from 'element-plus'
 import * as addressApi from '../../api/address'
+
+const router = useRouter()
 
 const addresses = ref([])
 const loading = ref(false)
@@ -138,6 +141,12 @@ const handleSetDefault = async (address) => {
   }
 }
 
+const goBack = () => {
+  router.push({
+    name: 'Profile'
+  })
+}
+
 onMounted(() => {
   fetchAddresses()
 })
@@ -146,6 +155,9 @@ onMounted(() => {
 <template>
   <div class="address-book">
     <div class="page-header">
+      <button class="back-btn" @click="goBack">
+        <span class="back-icon">←</span>
+      </button>
       <h3>地址管理</h3>
       <button class="btn btn-primary" @click="openCreateModal">+ 添加地址</button>
     </div>
@@ -251,9 +263,28 @@ onMounted(() => {
 
 .page-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
+  gap: 12px;
+}
+
+.back-btn {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: #333;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+}
+
+.back-icon {
+  font-size: 24px;
+  line-height: 1;
 }
 
 .page-header h3 {
@@ -261,6 +292,11 @@ onMounted(() => {
   color: #1f2937;
   font-size: 20px;
   font-weight: 600;
+  flex: 1;
+}
+
+.page-header .btn-primary {
+  flex-shrink: 0;
 }
 
 .content-card {

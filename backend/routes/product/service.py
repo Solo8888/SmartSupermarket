@@ -2,11 +2,12 @@
 # 商品服务
 # 处理商品相关的业务逻辑
 
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func
 from models.product import Product
 from models.category import Category
 from models.user_store import UserStore
+from models.inventory import Inventory
 from .schemas import ProductCreate, ProductUpdate
 from core.exceptions import NotFoundError, ClientError
 from fastapi_pagination import Page, Params
@@ -115,7 +116,7 @@ class ProductService:
         }
 
     @staticmethod
-    def get_products(db: Session, params: Params, search: str = None, store_id: str = None, user = None) -> Page[Product]:
+    def get_products(db: Session, params: Params, search: str = None, store_id: str = None, user = None):
         """
         获取商品列表
 
@@ -129,8 +130,8 @@ class ProductService:
         Returns:
             商品列表（分页）
         """
-        # 构建查询
-        query = db.query(Product).order_by(Product.id.asc())
+        # 构建查询，关联库存表
+        query = db.query(Product, Inventory.stock_quantity).outerjoin(Inventory, Product.id == Inventory.product_id).order_by(Product.id.asc())
         
         # 系统管理员和顾客可以查看所有商品，其他用户只能查看关联门店的商品
         if user and user.role not in ['system_admin', 'customer']:
@@ -154,7 +155,44 @@ class ProductService:
         if store_id:
             query = query.filter(Product.store_id == store_id)
         
-        return sqlalchemy_paginate(query, params=params)
+        # 执行查询
+        result = sqlalchemy_paginate(query, params=params)
+        
+        # 处理结果，添加库存信息
+        items = []
+        for product, stock_quantity in result.items:
+            product_dict = {
+                "id": product.id,
+                "name": product.name,
+                "category_id": product.category_id,
+                "store_id": product.store_id,
+                "price": product.price,
+                "original_price": product.original_price,
+                "purchase_price": product.purchase_price,
+                "description": product.description,
+                "image_url": product.image_url,
+                "barcode": product.barcode,
+                "brand": product.brand,
+                "origin": product.origin,
+                "shelf_life": product.shelf_life,
+                "unit": product.unit,
+                "status": product.status,
+                "sales_count": product.sales_count,
+                "view_count": product.view_count,
+                "stock": stock_quantity or 0,
+                "created_at": product.created_at,
+                "updated_at": product.updated_at
+            }
+            items.append(product_dict)
+        
+        # 返回修改后的分页结果
+        return {
+            "items": items,
+            "total": result.total,
+            "page": result.page,
+            "size": result.size,
+            "pages": result.pages
+        }
     
     @staticmethod
     def get_all_products(db: Session, user = None) -> list:
@@ -168,8 +206,8 @@ class ProductService:
         Returns:
             所有商品列表
         """
-        # 构建查询
-        query = db.query(Product).order_by(Product.id.asc())
+        # 构建查询，关联库存表
+        query = db.query(Product, Inventory.stock_quantity).outerjoin(Inventory, Product.id == Inventory.product_id).order_by(Product.id.asc())
         
         # 系统管理员和顾客可以查看所有商品，其他用户只能查看关联门店的商品
         if user and user.role not in ['system_admin', 'customer']:
@@ -180,7 +218,7 @@ class ProductService:
                 # 如果用户没有关联门店，返回空列表
                 query = query.filter(Product.store_id.in_([]))
         
-        products = query.all()
+        results = query.all()
         return [
             {
                 "id": product.id,
@@ -200,10 +238,11 @@ class ProductService:
                 "status": product.status,
                 "sales_count": product.sales_count,
                 "view_count": product.view_count,
+                "stock": stock_quantity or 0,
                 "created_at": product.created_at,
                 "updated_at": product.updated_at
             }
-            for product in products
+            for product, stock_quantity in results
         ]
 
     @staticmethod
@@ -223,10 +262,12 @@ class ProductService:
             NotFoundError: 商品不存在
             ClientError: 权限不足
         """
-        # 获取商品
-        product = db.query(Product).filter(Product.id == product_id).first()
-        if not product:
+        # 获取商品和库存信息
+        result = db.query(Product, Inventory.stock_quantity).outerjoin(Inventory, Product.id == Inventory.product_id).filter(Product.id == product_id).first()
+        if not result:
             raise NotFoundError("商品不存在")
+        
+        product, stock_quantity = result
 
         # 系统管理员和顾客可以查看所有商品，其他用户只能查看关联门店的商品
         if user and user.role not in ['system_admin', 'customer']:
@@ -252,6 +293,7 @@ class ProductService:
             "status": product.status,
             "sales_count": product.sales_count,
             "view_count": product.view_count,
+            "stock": stock_quantity or 0,
             "created_at": product.created_at,
             "updated_at": product.updated_at
         }

@@ -1,6 +1,11 @@
 <template>
   <div class="orders-page">
-    <h1 class="page-title">我的订单</h1>
+    <div class="header">
+      <button class="back-btn" @click="goBack">
+        <span class="back-icon">←</span>
+      </button>
+      <h1 class="page-title">我的订单</h1>
+    </div>
     
     <div class="tab-bar">
       <div 
@@ -299,6 +304,12 @@ const cancelOrder = async (order) => {
   }
 }
 
+const goBack = () => {
+  router.push({
+    name: 'Profile'
+  })
+}
+
 const viewOrderDetail = (order) => {
   router.push({
     name: 'OrderDetail',
@@ -326,10 +337,37 @@ onMounted(() => {
   background-color: #f5f5f5;
 }
 
+.header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 16px;
+  position: relative;
+}
+
+.back-btn {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: #333;
+  cursor: pointer;
+  margin-right: 12px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+}
+
+.back-icon {
+  font-size: 24px;
+  line-height: 1;
+}
+
 .page-title {
   font-size: 24px;
   font-weight: 600;
-  margin-bottom: 16px;
+  margin: 0;
   color: #333;
 }
 

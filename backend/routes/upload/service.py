@@ -36,8 +36,21 @@ class UploadService:
             buffer.write(content)
 
         # 返回完整路径，支持内网穿透
-        from config import settings
-        base_url = settings.backend_url
+        # 尝试从请求中获取正确的基础URL
+        base_url = None
+        
+        # 检查是否有X-Forwarded-Host头（通常由内网穿透服务设置）
+        forwarded_host = request.headers.get('X-Forwarded-Host')
+        if forwarded_host:
+            # 使用与前端相同的协议和主机
+            scheme = request.headers.get('X-Forwarded-Proto', 'http')
+            base_url = f"{scheme}://{forwarded_host}"
+        
+        # 如果没有X-Forwarded-Host头，使用请求的主机
+        if not base_url:
+            scheme = 'https' if request.url.scheme == 'https' else 'http'
+            base_url = f"{scheme}://{request.url.netloc}"
+        
         return {
             'url': f"{base_url}/uploads/images/{unique_filename}",
             'filename': unique_filename
