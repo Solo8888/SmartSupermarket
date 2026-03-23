@@ -6,7 +6,7 @@ from models.review import Review
 from models.order import Order, OrderItem
 from models.product import Product
 from .schemas import ReviewCreate
-from core.exceptions import NotFoundError
+from core.exceptions import NotFoundError, ClientError, ConflictError
 from sqlalchemy import func
 from datetime import datetime, timedelta
 import uuid
@@ -45,14 +45,14 @@ class ReviewService:
 
         # 验证订单状态是否为已收货
         if order.status != 'delivered':
-            raise ValueError("只有已收货的订单才能评价")
+            raise ClientError("只有已收货的订单才能评价")
 
         # 检查是否已经评价过
         existing_review = db.query(Review).filter(
             Review.order_item_id == payload.order_item_id
         ).first()
         if existing_review:
-            raise ValueError("此商品已经评价过")
+            raise ConflictError("此商品已经评价过")
 
         # 创建评价
         review = Review(
@@ -68,9 +68,14 @@ class ReviewService:
         db.commit()
         db.refresh(review)
 
-        # 更新订单状态为已完成
-        order.status = 'completed'
-        db.commit()
+        # 检查订单是否所有商品都已评价
+        order_items = db.query(OrderItem).filter(OrderItem.order_id == order.id).all()
+        reviewed_items = db.query(Review).filter(Review.order_id == order.id).count()
+        
+        # 只有当所有商品都已评价时，才将订单状态更新为已完成
+        if len(order_items) == reviewed_items:
+            order.status = 'completed'
+            db.commit()
 
         # 转换为字典返回
         return {

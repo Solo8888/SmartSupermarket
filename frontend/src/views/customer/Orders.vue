@@ -77,7 +77,7 @@
             <button 
               v-if="order.status === 'delivered' " 
               class="action-btn review-btn"
-              @click="reviewOrder(order)"
+              @click="navigateToReview(order)"
             >
               评价订单
             </button>
@@ -177,10 +177,15 @@ const loadOrders = async () => {
   try {
     const response = await orderApi.getOrders({ page: 1, size: 50 })
     console.log('订单列表响应:', response)
-    orders.value = response.items || response.orders || response.data?.orders || []
+    if (response && typeof response === 'object') {
+      orders.value = response.items || response.orders || response.data?.orders || []
+    } else {
+      orders.value = []
+    }
   } catch (error) {
     console.error('加载订单失败:', error)
     ElMessage.error('加载订单失败')
+    orders.value = []
   } finally {
     loading.value = false
   }
@@ -296,6 +301,13 @@ const cancelOrder = async (order) => {
 
 const viewOrderDetail = (order) => {
   ElMessage.info('订单详情功能开发中...')
+}
+
+const navigateToReview = (order) => {
+  router.push({
+    name: 'OrderReview',
+    params: { id: order.id }
+  })
 }
 
 onMounted(() => {

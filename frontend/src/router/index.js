@@ -124,6 +124,12 @@ const routes = [
         name: 'Orders',
         component: () => import('../views/customer/Orders.vue'),
         meta: { title: '我的订单', requiresRole: 'customer' }
+      },
+      {
+        path: 'order-review/:id',
+        name: 'OrderReview',
+        component: () => import('../views/customer/OrderReview.vue'),
+        meta: { title: '订单评价', requiresRole: 'customer' }
       }
     ]
   }
