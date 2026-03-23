@@ -130,6 +130,12 @@ const routes = [
         name: 'OrderReview',
         component: () => import('../views/customer/OrderReview.vue'),
         meta: { title: '订单评价', requiresRole: 'customer' }
+      },
+      {
+        path: 'order-detail/:id',
+        name: 'OrderDetail',
+        component: () => import('../views/customer/OrderDetail.vue'),
+        meta: { title: '订单详情', requiresRole: 'customer' }
       }
     ]
   }

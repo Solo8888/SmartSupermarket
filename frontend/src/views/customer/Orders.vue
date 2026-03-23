@@ -300,7 +300,10 @@ const cancelOrder = async (order) => {
 }
 
 const viewOrderDetail = (order) => {
-  ElMessage.info('订单详情功能开发中...')
+  router.push({
+    name: 'OrderDetail',
+    params: { id: order.id }
+  })
 }
 
 const navigateToReview = (order) => {
