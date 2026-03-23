@@ -420,8 +420,8 @@ class ProductService:
         Returns:
             该分类下的商品列表
         """
-        # 构建查询
-        query = db.query(Product).filter(
+        # 构建查询，关联库存表
+        query = db.query(Product, Inventory.stock_quantity).outerjoin(Inventory, Product.id == Inventory.product_id).filter(
             Product.category_id == category_id,
             Product.status == 'active'
         )
@@ -439,15 +439,17 @@ class ProductService:
         if store_id:
             query = query.filter(Product.store_id == store_id)
         
-        products = query.all()
+        results = query.all()
         return [
             {
                 "id": product.id,
                 "name": product.name,
                 "category_id": product.category_id,
+                "store_id": product.store_id,
                 "price": product.price,
-                "image_url": product.image_url
+                "image_url": product.image_url,
+                "stock": stock_quantity or 0
             }
-            for product in products
+            for product, stock_quantity in results
         ]
 

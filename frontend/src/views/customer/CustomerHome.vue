@@ -48,16 +48,20 @@ const fetchProducts = async () => {
     const response = await productApi.getProducts(params)
     console.log('商品数据:', response)
     let newProducts = response.items || []
-    // 过滤掉库存为0的商品
-    newProducts = newProducts.filter(product => {
-      // 假设商品对象中有 stock 或 inventory 字段表示库存
-      const stock = product.stock || product.inventory || product.quantity || 0
-      return stock > 0
-    })
-    // 随机排序商品
-    if (page.value === 1) {
-      newProducts = newProducts.sort(() => Math.random() - 0.5)
-    }
+        // 过滤掉库存为0的商品
+        newProducts = newProducts.filter(product => {
+          // 假设商品对象中有 stock 或 inventory 字段表示库存
+          const stock = product.stock || product.inventory || product.quantity || 0
+          return stock > 0
+        })
+        // 按库存数量从多到少排序，让有库存的商品优先展示
+        if (page.value === 1) {
+          newProducts = newProducts.sort((a, b) => {
+            const stockA = a.stock || a.inventory || a.quantity || 0
+            const stockB = b.stock || b.inventory || b.quantity || 0
+            return stockB - stockA
+          })
+        }
     if (page.value === 1) {
       products.value = newProducts
     } else {

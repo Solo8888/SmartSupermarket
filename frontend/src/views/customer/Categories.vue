@@ -94,7 +94,13 @@ const fetchProductsByCategory = async (categoryId) => {
       params.store_id = selectedStore.value.id
     }
     const response = await productApi.getProductsByCategory(categoryId, params)
-    products.value = response || []
+        products.value = response || []
+        // 按库存数量从多到少排序，让有库存的商品优先展示
+        products.value = products.value.sort((a, b) => {
+          const stockA = a.stock || 0
+          const stockB = b.stock || 0
+          return stockB - stockA
+        })
   } catch (err) {
     console.error('获取商品失败:', err)
     ElMessage.error('获取商品失败，请稍后重试')
@@ -258,7 +264,7 @@ onMounted(async () => {
           </div>
           <div v-else class="products-list-view">
           <div v-for="product in products" :key="product.id" class="product-item">
-            <div class="product-image">
+            <div class="product-image" :class="{ 'out-of-stock': (product.stock || 0) <= 0 }">
               <img :src="product.image_url && product.image_url.startsWith('http') ? product.image_url : (product.image_url ? window.location.origin + product.image_url : 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=' + encodeURIComponent(product.name || '商品') + '&image_size=square')" :alt="product.name" />
             </div>
             <div class="product-info">
@@ -266,7 +272,7 @@ onMounted(async () => {
               <p class="product-price">¥{{ product.price.toFixed(2) }}</p>
             </div>
             <div class="product-actions">
-              <button class="add-to-cart-btn" @click="addToCart(product)" :class="{ 'in-cart': isInCart(product.id) }">
+              <button class="add-to-cart-btn" @click="addToCart(product)" :class="{ 'in-cart': isInCart(product.id), 'out-of-stock': (product.stock || 0) <= 0 }" :disabled="(product.stock || 0) <= 0">
                 🛒
                 <span v-if="isInCart(product.id)" class="cart-badge">{{ getProductQuantity(product.id) }}</span>
               </button>
@@ -557,12 +563,33 @@ onMounted(async () => {
   overflow: hidden;
   flex-shrink: 0;
   background: white;
+  position: relative;
+}
+
+.product-image.out-of-stock::after {
+  content: '补货中';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 16px;
+  font-weight: bold;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
 }
 
 .product-image img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  position: relative;
+  z-index: 0;
 }
 
 .product-info {
@@ -625,6 +652,19 @@ onMounted(async () => {
 .add-to-cart-btn.in-cart {
   background: #3b82f6;
   color: white;
+}
+
+.add-to-cart-btn.out-of-stock {
+  border-color: #d1d5db;
+  color: #9ca3af;
+  cursor: not-allowed;
+  background: #f3f4f6;
+}
+
+.add-to-cart-btn.out-of-stock:hover {
+  background: #f3f4f6;
+  color: #9ca3af;
+  transform: none;
 }
 
 .cart-badge {
