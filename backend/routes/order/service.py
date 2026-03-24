@@ -108,10 +108,18 @@ class OrderService:
         db.add(order)
         db.flush()
 
-        # 保存订单项
+        # 保存订单项并更新库存
         for order_item in order_items:
             order_item.order_id = order.id
             db.add(order_item)
+            
+            # 更新库存
+            from models.inventory import Inventory
+            inventory = db.query(Inventory).filter(Inventory.product_id == order_item.product_id).first()
+            if inventory:
+                if inventory.stock_quantity < order_item.quantity:
+                    raise ValueError(f"商品 {order_item.product_name} 库存不足")
+                inventory.stock_quantity -= order_item.quantity
 
         db.commit()
         db.refresh(order)
@@ -449,6 +457,15 @@ class OrderService:
         # 更新订单状态
         order.status = 'cancelled'
         order.updated_at = func.current_timestamp()
+
+        # 恢复库存
+        from models.order import OrderItem
+        from models.inventory import Inventory
+        order_items = db.query(OrderItem).filter(OrderItem.order_id == order.id).all()
+        for item in order_items:
+            inventory = db.query(Inventory).filter(Inventory.product_id == item.product_id).first()
+            if inventory:
+                inventory.stock_quantity += item.quantity
 
         db.commit()
         db.refresh(order)
