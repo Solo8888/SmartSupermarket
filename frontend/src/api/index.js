@@ -7,19 +7,14 @@ const getBaseURL = () => {
     return envBaseURL
   }
   
-  const protocol = window.location.protocol
   const hostname = window.location.hostname
-  const port = window.location.port
   
   if (hostname === 'localhost' || hostname === '127.0.0.1') {
     return 'http://localhost:5000'
   }
   
-  if (port) {
-    return `${protocol}//${hostname}:${port.replace('3000', '5000')}`
-  }
-  
-  return `${protocol}//${hostname}`
+  // 非localhost时使用内网穿透地址
+  return 'https://d07dd15.r18.vip.cpolar.cn'
 }
 
 const request = axios.create({

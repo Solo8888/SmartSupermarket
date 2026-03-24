@@ -307,27 +307,41 @@ onMounted(async () => {
   padding-bottom: 120px;
   min-height: 100vh;
   background-color: #f5f5f5;
+  box-sizing: border-box;
 }
 
 .page-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
   display: flex;
   align-items: center;
-  margin-bottom: 16px;
+  background: white;
+  padding: 16px;
+  border-bottom: 1px solid #e5e7eb;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  z-index: 100;
+  margin: 0;
+  gap: 12px;
 }
 
 .back-btn {
   width: 36px;
   height: 36px;
   border: none;
-  background: white;
   border-radius: 50%;
-  font-size: 20px;
+  background: #f3f4f6;
+  font-size: 18px;
   cursor: pointer;
-  margin-right: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  transition: all 0.2s;
+}
+
+.back-btn:hover {
+  background: #e5e7eb;
 }
 
 .page-title {
@@ -375,6 +389,10 @@ onMounted(async () => {
   padding: 16px;
   margin-bottom: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.address-section {
+  margin-top: 80px;
 }
 
 .no-address {
@@ -652,7 +670,7 @@ onMounted(async () => {
 
 .submit-section {
   position: fixed;
-  bottom: 60px; /* 导航栏高度 */
+  bottom: 0;
   left: 0;
   right: 0;
   background: white;

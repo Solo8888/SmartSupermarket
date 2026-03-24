@@ -46,7 +46,6 @@ const fetchProducts = async () => {
       params.store_id = selectedStore.value.id
     }
     const response = await productApi.getProducts(params)
-    console.log('商品数据:', response)
     let newProducts = response.items || []
         // 过滤掉库存为0的商品
         newProducts = newProducts.filter(product => {
@@ -68,7 +67,6 @@ const fetchProducts = async () => {
       products.value = [...products.value, ...newProducts]
     }
     total.value = response.total || 0
-    console.log('处理后商品数据:', products.value)
   } catch (err) {
     console.error('获取商品失败:', err)
   } finally {
@@ -160,6 +158,8 @@ onMounted(async () => {
         v-for="(product, index) in products"
         :key="product.id || index"
         class="product-card"
+        @click="router.push(`/customer/product-detail/${product.id}`)"
+        style="cursor: pointer"
       >
         <div class="product-image">
           <img :src="getProductImage(product)" :alt="product.name || '商品'" />

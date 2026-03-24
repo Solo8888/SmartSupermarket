@@ -26,10 +26,8 @@ const fetchAddresses = async () => {
   loading.value = true
   try {
     const response = await addressApi.getAddresses()
-    console.log('获取地址列表响应:', response)
     // 确保addresses.value始终是一个数组
     addresses.value = Array.isArray(response) ? response : []
-    console.log('addresses.value:', addresses.value)
   } catch (err) {
     console.error('获取地址列表失败:', err)
     ElMessage.error('获取地址列表失败，请稍后重试')
@@ -262,9 +260,18 @@ onMounted(() => {
 }
 
 .page-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
   display: flex;
   align-items: center;
-  margin-bottom: 20px;
+  background: white;
+  padding: 16px;
+  border-bottom: 1px solid #e5e7eb;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  z-index: 100;
+  margin: 0;
   gap: 12px;
 }
 
@@ -304,6 +311,7 @@ onMounted(() => {
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
   padding: 20px;
+  margin-top: 80px;
 }
 
 .loading, .empty {

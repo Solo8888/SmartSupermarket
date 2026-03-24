@@ -181,7 +181,6 @@ const loadOrders = async () => {
   loading.value = true
   try {
     const response = await orderApi.getOrders({ page: 1, size: 50 })
-    console.log('订单列表响应:', response)
     if (response && typeof response === 'object') {
       orders.value = response.items || response.orders || response.data?.orders || []
     } else {
@@ -338,10 +337,18 @@ onMounted(() => {
 }
 
 .header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
   display: flex;
   align-items: center;
-  margin-bottom: 16px;
-  position: relative;
+  background: white;
+  padding: 16px;
+  border-bottom: 1px solid #e5e7eb;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  z-index: 100;
+  margin: 0;
 }
 
 .back-btn {
@@ -379,6 +386,7 @@ onMounted(() => {
   margin-bottom: 16px;
   overflow-x: auto;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  margin-top: 80px;
 }
 
 .tab-item {

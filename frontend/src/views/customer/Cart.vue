@@ -1,6 +1,12 @@
 <template>
-  <div class="cart-page">
-    <div class="page-header">
+  <div class="cart-page" :class="{ 'from-product-detail': isFromProductDetail }">
+    <div class="page-header" v-if="isFromProductDetail">
+      <button class="back-btn" @click="goBack">
+        <span class="back-icon">←</span>
+      </button>
+      <h1 class="page-title">购物车</h1>
+    </div>
+    <div class="page-header no-back" v-else>
       <h1 class="page-title">购物车</h1>
     </div>
     
@@ -63,11 +69,18 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import * as cartApi from '../../api/cart'
 
 const router = useRouter()
+const route = useRoute()
+
+// 从商品详情页面进入购物车
+const isFromProductDetail = computed(() => {
+  const from = sessionStorage.getItem('fromRoute')
+  return from === '/customer/product-detail'
+})
 
 const cartItems = ref([])
 const loading = ref(false)
@@ -162,7 +175,19 @@ const checkout = () => {
   })
 }
 
+const goBack = () => {
+  router.back()
+}
+
 onMounted(() => {
+  // 检查是否从商品详情页面进入
+  const isFromProductDetailPage = sessionStorage.getItem('fromRoute') === '/customer/product-detail'
+  
+  // 如果不是从商品详情页面进入，清除来源记录
+  if (!isFromProductDetailPage) {
+    sessionStorage.removeItem('fromRoute')
+  }
+  
   fetchCart()
 })
 </script>
@@ -173,17 +198,70 @@ onMounted(() => {
   padding-bottom: 100px;
   min-height: 100vh;
   background-color: #f5f7fa;
+  box-sizing: border-box;
+}
+
+.cart-page.from-product-detail {
+  padding-bottom: 100px;
 }
 
 .page-header {
-  margin-bottom: 20px;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  background: white;
+  padding: 16px;
+  border-bottom: 1px solid #e5e7eb;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  z-index: 100;
+  margin: 0;
+  gap: 12px;
+}
+
+.page-header.no-back {
+  position: static;
+  box-shadow: none;
+  border-bottom: none;
+  padding: 0 0 16px 0;
+  margin-bottom: 16px;
+}
+
+.page-header.no-back .page-title {
+  text-align: center;
+  width: 100%;
+}
+
+.back-btn {
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 50%;
+  background: #f3f4f6;
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.back-btn:hover {
+  background: #e5e7eb;
 }
 
 .page-title {
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 600;
   margin: 0;
   color: #1f2937;
+}
+
+.cart-list {
+  margin-top: 80px;
+  margin-bottom: 20px;
 }
 
 .loading {
@@ -362,13 +440,17 @@ onMounted(() => {
 
 .cart-summary {
   position: fixed;
-  bottom: 60px; /* 导航栏高度 */
+  bottom: 0;
   left: 0;
   right: 0;
   background: white;
   box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.08);
   z-index: 999;
   padding: 12px 16px;
+}
+
+.cart-page:not(.from-product-detail) .cart-summary {
+  bottom: 60px; /* 导航栏高度 */
 }
 
 .summary-content {

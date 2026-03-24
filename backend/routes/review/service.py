@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from models.review import Review
 from models.order import Order, OrderItem
 from models.product import Product
+from models.user import User
 from .schemas import ReviewCreate
 from core.exceptions import NotFoundError, ClientError, ConflictError
 from sqlalchemy import func
@@ -108,22 +109,23 @@ class ReviewService:
         if not product:
             raise NotFoundError("商品不存在")
 
-        # 查询评价
-        query = db.query(Review).filter(Review.product_id == product_id)
+        # 查询评价，关联用户表
+        query = db.query(Review, User.username).join(User, Review.user_id == User.id).filter(Review.product_id == product_id)
         total = query.count()
 
         # 分页查询
         offset = (page - 1) * size
-        reviews = query.order_by(Review.created_at.desc()).offset(offset).limit(size).all()
+        reviews_with_user = query.order_by(Review.created_at.desc()).offset(offset).limit(size).all()
 
         # 转换为字典列表
         reviews_dict = []
-        for review in reviews:
+        for review, username in reviews_with_user:
             reviews_dict.append({
                 "id": review.id,
                 "order_id": review.order_id,
                 "order_item_id": review.order_item_id,
                 "user_id": review.user_id,
+                "user_name": username,
                 "product_id": review.product_id,
                 "rating": review.rating,
                 "content": review.content,

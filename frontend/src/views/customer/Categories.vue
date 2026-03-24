@@ -1,5 +1,6 @@
 <script setup>
 import { ref, onMounted, computed, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import * as categoryApi from '../../api/category'
 import * as productApi from '../../api/product'
@@ -8,6 +9,7 @@ import * as storeApi from '../../api/store'
 import { useStoreStore } from '../../stores/store'
 
 const storeStore = useStoreStore()
+const router = useRouter()
 const categories = ref([])
 const products = ref([])
 const cartItems = ref([])
@@ -263,16 +265,16 @@ onMounted(async () => {
             该分类暂无商品
           </div>
           <div v-else class="products-list-view">
-          <div v-for="product in products" :key="product.id" class="product-item">
+          <div v-for="product in products" :key="product.id" class="product-item" @click="router.push(`/customer/product-detail/${product.id}`)" style="cursor: pointer">
             <div class="product-image" :class="{ 'out-of-stock': (product.stock || 0) <= 0 }">
               <img :src="product.image_url && product.image_url.startsWith('http') ? product.image_url : (product.image_url ? window.location.origin + product.image_url : 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=' + encodeURIComponent(product.name || '商品') + '&image_size=square')" :alt="product.name" />
             </div>
             <div class="product-info">
               <h4 class="product-name">{{ product.name }}</h4>
-              <p class="product-price">¥{{ product.price.toFixed(2) }}</p>
+              <p class="product-price">¥{{ parseFloat(product.price).toFixed(2) }}</p>
             </div>
             <div class="product-actions">
-              <button class="add-to-cart-btn" @click="addToCart(product)" :class="{ 'in-cart': isInCart(product.id), 'out-of-stock': (product.stock || 0) <= 0 }" :disabled="(product.stock || 0) <= 0">
+              <button class="add-to-cart-btn" @click.stop="addToCart(product)" :class="{ 'in-cart': isInCart(product.id), 'out-of-stock': (product.stock || 0) <= 0 }" :disabled="(product.stock || 0) <= 0">
                 🛒
                 <span v-if="isInCart(product.id)" class="cart-badge">{{ getProductQuantity(product.id) }}</span>
               </button>
