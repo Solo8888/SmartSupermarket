@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi_pagination import add_pagination
 from core.exceptions import BusinessException, business_exception_handler, general_exception_handler
 # from core.scheduler import start_scheduler, stop_scheduler
-from routes import user_router, category_router, product_router, upload_router, inventory_router, promotion_router, order_router, store_router, user_store_router, cart_router, address_router, review_router, recommendation_router
+from routes import user_router, category_router, product_router, upload_router, inventory_router, promotion_router, order_router, store_router, user_store_router, cart_router, address_router, review_router, recommendation_router, customer_flow_router
 from models import init_db
 
 # 创建FastAPI应用实例
@@ -20,7 +20,9 @@ app = FastAPI(
 @app.middleware("http")
 async def add_encoding_header(request, call_next):
     response = await call_next(request)
-    response.headers["Content-Type"] = "application/json; charset=utf-8"
+    # 只对JSON响应设置Content-Type，避免影响Swagger UI
+    if response.headers.get("Content-Type", "").startswith("application/json"):
+        response.headers["Content-Type"] = "application/json; charset=utf-8"
     return response
 
 # 添加CORS中间件
@@ -58,6 +60,7 @@ app.include_router(cart_router)
 app.include_router(address_router)
 app.include_router(review_router)
 app.include_router(recommendation_router)
+app.include_router(customer_flow_router)
 
 # 挂载静态文件目录
 import os

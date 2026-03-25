@@ -24,6 +24,9 @@ class Settings(BaseSettings):
     
     # 后端穿透地址
     backend_url: str = Field(default='http://localhost:5000', alias='BACKEND_URL')
+    
+    # 客流数据来源配置
+    use_camera: bool = Field(default=False, alias='USE_CAMERA')  # 是否使用摄像头获取客流数据
 
     class Config:
         env_file = '.env'
