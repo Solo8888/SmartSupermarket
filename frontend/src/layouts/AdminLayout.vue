@@ -15,6 +15,27 @@ const menuItems = computed(() => {
   if (role === 'inventory_manager') {
     items.push(
       {
+        name: '库存管理',
+        path: '/admin/inventory',
+        icon: '📦'
+      }
+    )
+  } else if (role === 'operations_manager') {
+    items.push(
+      {
+        name: '促销活动',
+        path: '/admin/promotions',
+        icon: '🎉'
+      },
+      {
+        name: '客流数据测试',
+        path: '/admin/customer-flow-test',
+        icon: '👥'
+      }
+    )
+  } else if (role === 'system_admin') {
+    items.push(
+      {
         name: '商品分类',
         path: '/admin/categories',
         icon: '📂'
@@ -24,22 +45,6 @@ const menuItems = computed(() => {
         path: '/admin/products',
         icon: '📦'
       },
-      {
-        name: '库存管理',
-        path: '/admin/inventory',
-        icon: '📊'
-      }
-    )
-  } else if (role === 'operations_manager') {
-    items.push(
-      {
-        name: '促销活动',
-        path: '/admin/promotions',
-        icon: '🎉'
-      }
-    )
-  } else if (role === 'system_admin') {
-    items.push(
       {
         name: '门店管理',
         path: '/admin/stores',

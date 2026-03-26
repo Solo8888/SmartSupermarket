@@ -28,7 +28,6 @@ class CategoryResponse(BaseModel):
     id: str
     name: str
     parent_id: Optional[str] = None
-    store_id: str
     description: Optional[str] = None
     sort_order: int
     created_at: datetime

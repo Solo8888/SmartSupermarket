@@ -47,7 +47,6 @@ class ProductResponse(BaseModel):
     id: str
     name: str
     category_id: str
-    store_id: str
     price: Decimal
     original_price: Optional[Decimal] = None
     purchase_price: Decimal

@@ -37,6 +37,50 @@ class StoreService:
         db.commit()
         db.refresh(store)
 
+        # 为新门店关联所有现有商品
+        from models.product import Product
+        from models.store_product import StoreProduct
+        from models.inventory import Inventory
+        import uuid
+        
+        # 获取所有商品
+        all_products = db.query(Product).all()
+        
+        # 为每个商品创建门店商品关联
+        for product in all_products:
+            # 检查关联是否已存在
+            existing_association = db.query(StoreProduct).filter(
+                StoreProduct.store_id == store.id,
+                StoreProduct.product_id == product.id
+            ).first()
+            
+            if not existing_association:
+                # 创建门店商品关联
+                store_product = StoreProduct(
+                    id=str(uuid.uuid4()),
+                    store_id=store.id,
+                    product_id=product.id,
+                    status='active'
+                )
+                db.add(store_product)
+            
+            # 检查是否已有库存记录
+            existing_inventory = db.query(Inventory).filter(
+                Inventory.product_id == product.id
+            ).first()
+            
+            if not existing_inventory:
+                # 为商品创建库存记录
+                inventory = Inventory(
+                    id=str(uuid.uuid4()),
+                    product_id=product.id,
+                    stock_quantity=0,
+                    warning_quantity=10
+                )
+                db.add(inventory)
+        
+        db.commit()
+
         # 转换为字典返回
         return {
             "id": store.id,

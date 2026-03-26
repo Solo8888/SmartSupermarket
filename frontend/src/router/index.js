@@ -34,13 +34,13 @@ const routes = [
         path: 'categories',
         name: 'Categories',
         component: () => import('../views/admin/Categories.vue'),
-        meta: { title: '商品分类管理', requiresRole: 'inventory_manager' }
+        meta: { title: '商品分类管理', requiresRole: 'system_admin' }
       },
       {
         path: 'products',
         name: 'Products',
         component: () => import('../views/admin/Products.vue'),
-        meta: { title: '商品管理', requiresRole: 'inventory_manager' }
+        meta: { title: '商品管理', requiresRole: 'system_admin' }
       },
       {
         path: 'inventory',
@@ -163,44 +163,60 @@ router.beforeEach((to, from, next) => {
   }
   
   const isAuthenticated = !!accessToken
-  const isManager = userInfo?.role === 'inventory_manager' || userInfo?.role === 'operations_manager' || userInfo?.role === 'system_admin'
-  const isCustomer = userInfo?.role === 'customer'
-  const isSystemAdmin = userInfo?.role === 'system_admin'
+  const userRole = userInfo?.role
+  const isManager = userRole === 'inventory_manager' || userRole === 'operations_manager' || userRole === 'system_admin'
+  const isCustomer = userRole === 'customer'
+  const isSystemAdmin = userRole === 'system_admin'
+  
+  // 角色权限级别：system_admin > operations_manager = inventory_manager > customer
+  const roleHierarchy = {
+    'system_admin': 4,
+    'operations_manager': 2,
+    'inventory_manager': 2,
+    'customer': 1
+  }
+  
+  // 检查权限
+  const hasPermission = (requiredRole) => {
+    if (isSystemAdmin) return true // 系统管理员有所有权限
+    if (!userRole) return false
+    return userRole === requiredRole
+  }
   
   if (to.meta.requiresAuth && !isAuthenticated) {
     next('/login')
-  } else if (to.meta.requiresRole && userInfo?.role !== to.meta.requiresRole) {
+  } else if (to.meta.requiresRole && !hasPermission(to.meta.requiresRole)) {
     next('/home')
-  } else if (to.meta.requiresRoles && !to.meta.requiresRoles.includes(userInfo?.role)) {
+  } else if (to.meta.requiresRoles && !to.meta.requiresRoles.includes(userRole)) {
     next('/home')
-  } else if (to.path === '/admin' && userInfo?.role === 'operations_manager') {
+  } else if (to.path === '/admin' && userRole === 'operations_manager') {
     next('/admin/promotions')
-  } else if (to.path === '/admin' && userInfo?.role === 'inventory_manager') {
+  } else if (to.path === '/admin' && userRole === 'inventory_manager') {
+    next('/admin/inventory')
+  } else if (to.path === '/admin' && userRole === 'system_admin') {
     next('/admin/categories')
-  } else if (to.path === '/admin' && userInfo?.role === 'system_admin') {
-    next('/admin/stores')
-  } else if (to.path === '/admin' && userInfo?.role === 'customer') {
+  } else if (to.path === '/admin' && userRole === 'customer') {
     next('/customer/home')
   } else if ((to.path === '/login' || to.path === '/register') && isAuthenticated) {
     if (isManager) {
-      if (userInfo?.role === 'operations_manager') {
+      if (userRole === 'operations_manager') {
         next('/admin/promotions')
-      } else if (userInfo?.role === 'system_admin') {
-        next('/admin/stores')
-      } else {
+      } else if (userRole === 'system_admin') {
         next('/admin/categories')
+      } else {
+        next('/admin/inventory')
       }
     } else if (isCustomer) {
       next('/customer/home')
     }
   } else if (to.path === '/home' && isAuthenticated) {
     if (isManager) {
-      if (userInfo?.role === 'operations_manager') {
+      if (userRole === 'operations_manager') {
         next('/admin/promotions')
-      } else if (userInfo?.role === 'system_admin') {
-        next('/admin/stores')
-      } else {
+      } else if (userRole === 'system_admin') {
         next('/admin/categories')
+      } else {
+        next('/admin/inventory')
       }
     } else if (isCustomer) {
       next('/customer/home')

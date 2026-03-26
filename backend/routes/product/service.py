@@ -54,17 +54,10 @@ class ProductService:
             if existing_product:
                 raise ValueError("商品条码已存在")
 
-        # 获取用户关联的门店ID
-        user_store = db.query(UserStore).filter(UserStore.user_id == user.id).first()
-        if not user_store:
-            raise ValueError("用户未分配门店")
-        store_id = user_store.store_id
-
-        # 创建新商品
+        # 创建单个商品（所有门店共用）
         product = Product(
             name=payload.name,
             category_id=payload.category_id,
-            store_id=store_id,
             price=payload.price,
             original_price=payload.original_price,
             purchase_price=payload.purchase_price,
@@ -77,12 +70,11 @@ class ProductService:
             unit=payload.unit,
             status=payload.status
         )
-
         db.add(product)
         db.commit()
         db.refresh(product)
 
-        # 自动创建库存记录，默认库存为0
+        # 为商品创建库存记录
         from models.inventory import Inventory
         inventory = Inventory(
             product_id=product.id,
@@ -90,14 +82,31 @@ class ProductService:
             warning_quantity=10
         )
         db.add(inventory)
+
+        # 为所有门店关联此商品
+        from models.store import Store
+        from models.store_product import StoreProduct
+        import uuid
+        
+        # 获取所有门店
+        stores = db.query(Store).all()
+        
+        # 为每个门店创建商品关联
+        for store in stores:
+            store_product = StoreProduct(
+                id=str(uuid.uuid4()),
+                store_id=store.id,
+                product_id=product.id,
+                status='active'
+            )
+            db.add(store_product)
+
         db.commit()
 
-        # 转换为字典返回
         return {
             "id": product.id,
             "name": product.name,
             "category_id": product.category_id,
-            "store_id": product.store_id,
             "price": product.price,
             "original_price": product.original_price,
             "purchase_price": product.purchase_price,
@@ -133,14 +142,7 @@ class ProductService:
         # 构建查询，关联库存表
         query = db.query(Product, Inventory.stock_quantity).outerjoin(Inventory, Product.id == Inventory.product_id).order_by(Product.id.asc())
         
-        # 系统管理员和顾客可以查看所有商品，其他用户只能查看关联门店的商品
-        if user and user.role not in ['system_admin', 'customer']:
-            user_store_ids = ProductService.get_user_stores(db, user.id)
-            if user_store_ids:
-                query = query.filter(Product.store_id.in_(user_store_ids))
-            else:
-                # 如果用户没有关联门店，返回空列表
-                query = query.filter(Product.store_id.in_([]))
+        # 所有用户都可以查看所有商品（因为商品是共用的）
         
         # 搜索条件
         if search:
@@ -151,9 +153,10 @@ class ProductService:
                 (Product.barcode.like(search_term))
             )
         
-        # 门店过滤
+        # 门店过滤（通过门店商品关联表）
         if store_id:
-            query = query.filter(Product.store_id == store_id)
+            from models.store_product import StoreProduct
+            query = query.join(StoreProduct, Product.id == StoreProduct.product_id).filter(StoreProduct.store_id == store_id)
         
         # 执行查询
         result = sqlalchemy_paginate(query, params=params)
@@ -165,7 +168,6 @@ class ProductService:
                 "id": product.id,
                 "name": product.name,
                 "category_id": product.category_id,
-                "store_id": product.store_id,
                 "price": product.price,
                 "original_price": product.original_price,
                 "purchase_price": product.purchase_price,
@@ -209,14 +211,7 @@ class ProductService:
         # 构建查询，关联库存表
         query = db.query(Product, Inventory.stock_quantity).outerjoin(Inventory, Product.id == Inventory.product_id).order_by(Product.id.asc())
         
-        # 系统管理员和顾客可以查看所有商品，其他用户只能查看关联门店的商品
-        if user and user.role not in ['system_admin', 'customer']:
-            user_store_ids = ProductService.get_user_stores(db, user.id)
-            if user_store_ids:
-                query = query.filter(Product.store_id.in_(user_store_ids))
-            else:
-                # 如果用户没有关联门店，返回空列表
-                query = query.filter(Product.store_id.in_([]))
+        # 所有用户都可以查看所有商品（因为商品是共用的）
         
         results = query.all()
         return [
@@ -224,7 +219,6 @@ class ProductService:
                 "id": product.id,
                 "name": product.name,
                 "category_id": product.category_id,
-                "store_id": product.store_id,
                 "price": product.price,
                 "original_price": product.original_price,
                 "purchase_price": product.purchase_price,
@@ -260,7 +254,6 @@ class ProductService:
 
         Raises:
             NotFoundError: 商品不存在
-            ClientError: 权限不足
         """
         # 获取商品和库存信息
         result = db.query(Product, Inventory.stock_quantity).outerjoin(Inventory, Product.id == Inventory.product_id).filter(Product.id == product_id).first()
@@ -269,17 +262,12 @@ class ProductService:
         
         product, stock_quantity = result
 
-        # 系统管理员和顾客可以查看所有商品，其他用户只能查看关联门店的商品
-        if user and user.role not in ['system_admin', 'customer']:
-            user_store_ids = ProductService.get_user_stores(db, user.id)
-            if product.store_id not in user_store_ids:
-                raise ClientError("权限不足，无法查看此商品", "PERMISSION_DENIED")
+        # 所有用户都可以查看所有商品（因为商品是共用的）
 
         return {
             "id": product.id,
             "name": product.name,
             "category_id": product.category_id,
-            "store_id": product.store_id,
             "price": product.price,
             "original_price": product.original_price,
             "purchase_price": product.purchase_price,
@@ -321,11 +309,9 @@ class ProductService:
         if not product:
             raise NotFoundError("商品不存在")
 
-        # 系统管理员可以更新所有商品，其他用户只能更新关联门店的商品
+        # 只有系统管理员可以更新商品
         if user.role != 'system_admin':
-            user_store_ids = ProductService.get_user_stores(db, user.id)
-            if product.store_id not in user_store_ids:
-                raise ClientError("权限不足，无法更新此商品", "PERMISSION_DENIED")
+            raise ClientError("权限不足，无法更新此商品", "PERMISSION_DENIED")
 
         # 检查分类是否存在（如果提供了category_id）
         if payload.category_id is not None:
@@ -359,7 +345,6 @@ class ProductService:
             "id": product.id,
             "name": product.name,
             "category_id": product.category_id,
-            "store_id": product.store_id,
             "price": product.price,
             "original_price": product.original_price,
             "purchase_price": product.purchase_price,
@@ -396,11 +381,9 @@ class ProductService:
         if not product:
             raise NotFoundError("商品不存在")
 
-        # 系统管理员可以删除所有商品，其他用户只能删除关联门店的商品
+        # 只有系统管理员可以删除商品
         if user.role != 'system_admin':
-            user_store_ids = ProductService.get_user_stores(db, user.id)
-            if product.store_id not in user_store_ids:
-                raise ClientError("权限不足，无法删除此商品", "PERMISSION_DENIED")
+            raise ClientError("权限不足，无法删除此商品", "PERMISSION_DENIED")
 
         # 删除商品
         db.delete(product)
@@ -426,18 +409,12 @@ class ProductService:
             Product.status == 'active'
         )
         
-        # 系统管理员和顾客可以查看所有商品，其他用户只能查看关联门店的商品
-        if user and user.role not in ['system_admin', 'customer']:
-            user_store_ids = ProductService.get_user_stores(db, user.id)
-            if user_store_ids:
-                query = query.filter(Product.store_id.in_(user_store_ids))
-            else:
-                # 如果用户没有关联门店，返回空列表
-                query = query.filter(Product.store_id.in_([]))
+        # 所有用户都可以查看所有商品（因为商品是共用的）
         
-        # 门店过滤
+        # 门店过滤（通过门店商品关联表）
         if store_id:
-            query = query.filter(Product.store_id == store_id)
+            from models.store_product import StoreProduct
+            query = query.join(StoreProduct, Product.id == StoreProduct.product_id).filter(StoreProduct.store_id == store_id)
         
         results = query.all()
         return [
@@ -445,7 +422,6 @@ class ProductService:
                 "id": product.id,
                 "name": product.name,
                 "category_id": product.category_id,
-                "store_id": product.store_id,
                 "price": product.price,
                 "image_url": product.image_url,
                 "stock": stock_quantity or 0

@@ -13,7 +13,6 @@ class Product(Base):
     id = Column(CHAR(36), primary_key=True, default=lambda: str(uuid.uuid4()), comment='商品ID')
     name = Column(String(100), nullable=False, comment='商品名称')
     category_id = Column(CHAR(36), ForeignKey('categories.id', ondelete='CASCADE'), nullable=False, comment='分类ID')
-    store_id = Column(CHAR(36), ForeignKey('stores.id', ondelete='CASCADE'), nullable=False, comment='门店ID')
     price = Column(DECIMAL(10, 2), nullable=False, comment='商品价格')
     original_price = Column(DECIMAL(10, 2), nullable=True, comment='原价')
     purchase_price = Column(DECIMAL(10, 2), nullable=False, comment='进货价格')

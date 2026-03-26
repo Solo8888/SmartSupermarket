@@ -39,6 +39,7 @@ from .promotion_product import PromotionProduct
 from .promotion_category import PromotionCategory
 from .cart import Cart, CartItem
 from .review import Review
+from .store_product import StoreProduct
 
 
 def get_db() -> Session:

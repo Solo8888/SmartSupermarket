@@ -102,6 +102,10 @@ def require_role(required_role, mode: str = 'gte') -> Callable:
         if user is None:
             raise UnauthorizedError("用户不存在")
 
+        # 系统管理员自动获得所有权限
+        if user.role == 'system_admin':
+            return user
+            
         if mode == 'in' and isinstance(required_role, list):
             # 角色在列表中
             if user.role not in required_role:

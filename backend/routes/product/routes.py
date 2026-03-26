@@ -16,7 +16,7 @@ product_router = APIRouter(prefix='/products', tags=['products'])
 @product_router.post('', response_model=ProductResponse)
 async def create_product(
         payload: ProductCreate,
-        user: User = Depends(require_role('inventory_manager')),
+        user: User = Depends(require_role('system_admin')),
         db: Session = Depends(get_db)
 ):
     """
@@ -60,7 +60,7 @@ async def get_products(
 
 @product_router.get('/all')
 async def get_all_products(
-        user: User = Depends(require_role('inventory_manager')),
+        user: User = Depends(require_role('system_admin')),
         db: Session = Depends(get_db)
 ):
     """
@@ -101,7 +101,7 @@ async def get_product(
 async def update_product(
         product_id: str,
         payload: ProductUpdate,
-        user: User = Depends(require_role('inventory_manager')),
+        user: User = Depends(require_role('system_admin')),
         db: Session = Depends(get_db)
 ):
     """
@@ -123,7 +123,7 @@ async def update_product(
 @product_router.delete('/{product_id}', status_code=204)
 async def delete_product(
         product_id: str,
-        user: User = Depends(require_role('inventory_manager')),
+        user: User = Depends(require_role('system_admin')),
         db: Session = Depends(get_db)
 ):
     """

@@ -233,6 +233,9 @@ services:
       - mysql
       - redis
       - kafka
+      - master
+      - worker1
+      - worker2
     ports:
       - "5000:5000"
     volumes:
