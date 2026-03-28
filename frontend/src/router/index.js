@@ -71,6 +71,12 @@ const routes = [
         name: 'UserStores',
         component: () => import('../views/admin/UserStores.vue'),
         meta: { title: '用户门店管理', requiresRole: 'system_admin' }
+      },
+      {
+        path: 'customer-flow',
+        name: 'CustomerFlow',
+        component: () => import('../views/admin/CustomerFlow.vue'),
+        meta: { title: '客流管理', requiresRole: 'operations_manager' }
       }
     ]
   },
@@ -178,7 +184,11 @@ router.beforeEach((to, from, next) => {
   
   // 检查权限
   const hasPermission = (requiredRole) => {
-    if (isSystemAdmin) return true // 系统管理员有所有权限
+    // 系统管理员不能访问客流管理
+    if (isSystemAdmin && requiredRole === 'operations_manager' && to.path === '/admin/customer-flow') {
+      return false
+    }
+    if (isSystemAdmin) return true // 系统管理员有其他所有权限
     if (!userRole) return false
     return userRole === requiredRole
   }

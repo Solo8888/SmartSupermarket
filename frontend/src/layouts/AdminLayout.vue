@@ -28,8 +28,8 @@ const menuItems = computed(() => {
         icon: '🎉'
       },
       {
-        name: '客流数据测试',
-        path: '/admin/customer-flow-test',
+        name: '客流管理',
+        path: '/admin/customer-flow',
         icon: '👥'
       }
     )

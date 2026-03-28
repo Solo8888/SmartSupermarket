@@ -5,6 +5,7 @@ import os
 import time
 import json
 import random
+import tempfile
 from datetime import datetime, timedelta
 from typing import List, Dict, Any
 
@@ -70,12 +71,31 @@ class CustomerFlowGenerator:
         Returns:
             门店列表
         """
-        # 模拟门店数据，避免依赖数据库
-        return [
-            {"id": "store1", "name": "Store 1"},
-            {"id": "store2", "name": "Store 2"},
-            {"id": "store3", "name": "Store 3"}
-        ]
+        try:
+            # 从数据库获取真实的门店数据
+            # 尝试相对导入
+            try:
+                from ..models import get_db, Store
+            except ImportError:
+                # 尝试绝对导入
+                from models import get_db, Store
+            db = next(get_db())
+            stores = db.query(Store).all()
+            store_list = [
+                {"id": store.id, "name": store.name}
+                for store in stores
+            ]
+            print(f"Retrieved {len(store_list)} stores from database")
+            return store_list
+        except Exception as e:
+            print(f"Error getting stores from database: {e}")
+            # 如果数据库获取失败，使用模拟数据
+            # 但使用与真实门店相同的ID格式
+            return [
+                {"id": "e1d4f7cd-7603-47be-9b3a-762141b5d2df", "name": "Store 1"},
+                {"id": "store2", "name": "Store 2"},
+                {"id": "store3", "name": "Store 3"}
+            ]
     
     def generate_for_all_stores(self, timestamp: datetime) -> List[Dict[str, Any]]:
         """为所有门店生成客流数据
@@ -108,13 +128,22 @@ class CustomerFlowGenerator:
         hdfs_path = f"/customer_flow/{date_str}/{hour_str}"
         hdfs_file_path = f"{hdfs_path}/data.json"
         
-        # 构建本地临时文件路径
-        temp_file = f"/tmp/customer_flow_{timestamp.strftime('%Y%m%d%H')}.json"
+        print(f"Saving data to HDFS: {hdfs_file_path}")
+        print(f"Data to save: {data}")
         
-        # 写入本地临时文件
+        # 使用tempfile模块创建临时文件，跨平台兼容
+        temp_file = None
         try:
-            with open(temp_file, 'w', encoding='utf-8') as f:
+            # 创建临时文件
+            with tempfile.NamedTemporaryFile(mode='w', encoding='utf-8', suffix='.json', delete=False) as f:
                 json.dump(data, f, ensure_ascii=False, indent=2)
+                temp_file = f.name
+            
+            # 验证文件内容
+            with open(temp_file, 'r', encoding='utf-8') as f:
+                file_content = f.read()
+            print(f"Temporary file content: {file_content}")
+            print(f"Temporary file size: {len(file_content)}")
             
             # 上传到HDFS
             retries = 3
@@ -126,6 +155,7 @@ class CustomerFlowGenerator:
                     # 上传文件
                     with open(temp_file, 'rb') as f:
                         data_bytes = f.read()
+                    print(f"Uploading data of size: {len(data_bytes)}")
                     if hdfs_client.write_file(hdfs_file_path, data_bytes):
                         print(f"Data saved to HDFS: {hdfs_file_path}")
                         break
@@ -142,7 +172,7 @@ class CustomerFlowGenerator:
             print(f"Error writing temporary file: {e}")
         finally:
             # 删除本地临时文件
-            if os.path.exists(temp_file):
+            if temp_file and os.path.exists(temp_file):
                 try:
                     os.remove(temp_file)
                 except Exception as e:

@@ -148,63 +148,54 @@ class WebHDFSClient:
         Returns:
             是否成功
         """
-        # 第一步：获取重定向URL
-        response = self._make_request('PUT', path, {'op': 'CREATE', 'overwrite': 'true'})
-        if response is None:
-            print(f"Failed to get redirect URL for {path}: response is None")
-            return False
+        print(f"Writing file: {path}")
+        print(f"Data size: {len(data)}")
+        print(f"Data sample: {data[:100]}...")
         
-        # 处理不同的状态码
-        if response.status_code == 201:
-            # 文件已经成功创建，直接返回成功
-            print(f"File created successfully: {path}")
-            return True
-        elif response.status_code == 307:
-            # 重定向到DataNode
-            pass
-        elif response.status_code == 403:
-            print(f"Permission denied for {path}: {response.text}")
-            return False
-        elif response.status_code == 404:
-            print(f"Path does not exist: {path}")
-            return False
-        elif response.status_code == 409:
-            print(f"Conflict: {path} already exists and overwrite is false")
-            return False
-        elif response.status_code >= 500:
-            print(f"HDFS server error for {path}: {response.status_code}, {response.text}")
-            return False
-        else:
-            print(f"Failed to get redirect URL for {path}: status code {response.status_code}, content: {response.text}")
-            return False
+        # 直接使用PUT请求上传数据，使用OPEN操作
+        url = f"{self.base_url}{path}"
+        params = {'op': 'CREATE', 'overwrite': 'true', 'user.name': self.user}
         
-        # 第二步：上传数据到DataNode
-        redirect_url = response.headers.get('Location')
-        if not redirect_url:
-            print(f"No redirect URL found for {path}")
-            return False
+        print(f"Upload URL: {url}")
         
         try:
-            response = requests.put(redirect_url, data=data, timeout=30)
+            # 发送请求
+            response = requests.put(url, data=data, params=params, timeout=30, allow_redirects=False)
             
-            # 处理上传响应的状态码
+            print(f"Upload response status code: {response.status_code}")
+            print(f"Upload response text: {response.text}")
+            
+            # 处理重定向
+            if response.status_code == 307:
+                redirect_url = response.headers.get('Location')
+                print(f"Redirecting to: {redirect_url}")
+                
+                # 处理Docker容器内部主机名的重定向
+                if redirect_url:
+                    # 在Docker容器内部，保持使用原始主机名
+                    # 在外部，将主机名替换为localhost
+                    if not os.path.exists('/app'):
+                        # 在外部环境，将worker1、worker2、master替换为localhost
+                        redirect_url = redirect_url.replace('worker1', 'localhost')
+                        redirect_url = redirect_url.replace('worker2', 'localhost')
+                        redirect_url = redirect_url.replace('master', 'localhost')
+                        print(f"Modified redirect URL: {redirect_url}")
+                    
+                    # 再次发送请求到修改后的URL
+                    response = requests.put(redirect_url, data=data, timeout=30)
+                    print(f"Redirect response status code: {response.status_code}")
+                    print(f"Redirect response text: {response.text}")
+            
             if response.status_code == 201:
                 print(f"File uploaded successfully: {path}")
                 return True
-            elif response.status_code == 403:
-                print(f"Permission denied when uploading to {path}: {response.text}")
-                return False
-            elif response.status_code == 404:
-                print(f"Path does not exist when uploading to {path}")
-                return False
-            elif response.status_code >= 500:
-                print(f"HDFS server error when uploading to {path}: {response.status_code}, {response.text}")
-                return False
             else:
-                print(f"Failed to upload data to {path}: status code {response.status_code}, content: {response.text}")
+                print(f"Failed to upload data: status code {response.status_code}")
                 return False
         except Exception as e:
             print(f"Error uploading data to {path}: {e}")
+            import traceback
+            traceback.print_exc()
             return False
     
     def read_file(self, path: str) -> Optional[str]:
@@ -216,24 +207,34 @@ class WebHDFSClient:
         Returns:
             文件内容
         """
+        print(f"Reading file: {path}")
         response = self._make_request('GET', path, {'op': 'OPEN'})
         if response is None:
+            print(f"No response when reading file: {path}")
             return None
+        
+        print(f"Response status code: {response.status_code}")
         
         # 处理重定向
         if response.status_code == 307:
             redirect_url = response.headers.get('Location')
+            print(f"Redirecting to: {redirect_url}")
             if redirect_url:
                 try:
                     response = requests.get(redirect_url, timeout=30)
+                    print(f"Redirect response status code: {response.status_code}")
                 except Exception as e:
                     print(f"Error reading file from {redirect_url}: {e}")
                     return None
         
         if response.status_code == 200:
-            return response.text
+            content = response.text
+            print(f"File content length: {len(content)}")
+            print(f"File content: {content}")
+            return content
         else:
             print(f"Failed to read file {path}: {response.status_code}")
+            print(f"Response text: {response.text}")
             return None
     
     def delete(self, path: str, recursive: bool = False) -> bool:
@@ -310,7 +311,10 @@ class WebHDFSClient:
 
 
 # 全局HDFS客户端实例
-hdfs_client = WebHDFSClient(user=os.getenv('HDFS_USER', 'root'))
+# 根据环境选择合适的HDFS主机名
+# 在Docker容器内部使用'master'，外部使用'localhost'
+hdfs_host = os.getenv('HDFS_HOST', 'master' if os.path.exists('/app') else 'localhost')
+hdfs_client = WebHDFSClient(host=hdfs_host, user=os.getenv('HDFS_USER', 'jupyter'))
 
 # 在实例化后添加连接测试
 try:
