@@ -6,7 +6,7 @@ import time
 import json
 import random
 import tempfile
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List, Dict, Any
 
 # 尝试相对导入，如果失败则使用绝对导入
@@ -181,7 +181,7 @@ class CustomerFlowGenerator:
     def delete_old_data(self):
         """删除超过保留年限的数据"""
         # 计算保留期限
-        retention_date = datetime.now() - timedelta(days=self.data_retention_years * 365)
+        retention_date = datetime.now(timezone.utc) - timedelta(days=self.data_retention_years * 365)
         retention_date_str = retention_date.strftime("%Y-%m-%d")
         
         # 检查并删除早于保留日期的所有数据
@@ -240,7 +240,7 @@ class CustomerFlowGenerator:
     def complete_missing_data(self):
         """补全缺失的客流数据"""
         # 获取当前时间，调整到最近的整点
-        now = datetime.now()
+        now = datetime.now(timezone.utc)
         current_hour = now.replace(minute=0, second=0, microsecond=0)
         
         # 检查最近24小时的数据
@@ -261,7 +261,7 @@ class CustomerFlowGenerator:
     def run(self):
         """运行客流数据生成器"""
         # 获取当前时间，调整到最近的整点
-        now = datetime.now()
+        now = datetime.now(timezone.utc)
         current_hour = now.replace(minute=0, second=0, microsecond=0)
         
         # 生成所有门店的客流数据
