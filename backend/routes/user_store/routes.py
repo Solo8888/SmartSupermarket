@@ -35,7 +35,7 @@ async def create_store_allocation(
 @user_store_router.get('/user/{user_id}', response_model=list[UserStoreListResponse])
 async def get_user_stores(
         user_id: str,
-        user: User = Depends(require_role('system_admin', mode='eq')),
+        user: User = Depends(require_role(["system_admin", "operations_manager"], mode='in')),
         db: Session = Depends(get_db)
 ):
     """

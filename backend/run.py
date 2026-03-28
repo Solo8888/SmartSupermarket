@@ -15,7 +15,7 @@ def run_customer_flow_generator():
         try:
             # 每小时生成一次数据
             generator = CustomerFlowGenerator()
-            generator.run()
+            generator.run(complete_hours=720)
             print("Customer flow data generated successfully")
             # 等待1小时
             time.sleep(3600)  # 1小时 = 3600秒

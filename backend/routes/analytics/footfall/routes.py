@@ -12,8 +12,11 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
-from .schemas import TimeDistributionResponse, TimeDistributionQuery, ExportRequest
-from .service import TimeDistributionService, ExportService
+from .schemas import (
+    TimeDistributionResponse, TimeDistributionQuery, ExportRequest,
+    WeekComparisonResponse, WeekendWeekdayResponse, ForecastResponse
+)
+from .service import TimeDistributionService, ExportService, ComparisonService, ForecastService
 from core.permitions import require_role
 
 footfall_router = APIRouter(
@@ -24,6 +27,8 @@ footfall_router = APIRouter(
 
 time_distribution_service = TimeDistributionService()
 export_service = ExportService()
+comparison_service = ComparisonService()
+forecast_service = ForecastService()
 
 
 @footfall_router.get("/time-distribution", response_model=TimeDistributionResponse)
@@ -39,10 +44,7 @@ async def get_time_distribution(
     - **end_date**: 结束日期 (YYYY-MM-DD)
     - **store_id**: 门店ID（可选）
     """
-    # 权限检查由require_role依赖处理
-    
     try:
-        # 验证时间范围
         from datetime import datetime
         start = datetime.strptime(start_date, "%Y-%m-%d")
         end = datetime.strptime(end_date, "%Y-%m-%d")
@@ -50,10 +52,8 @@ async def get_time_distribution(
         if start > end:
             raise HTTPException(status_code=400, detail="开始日期不能晚于结束日期")
         
-        # 获取时间分布数据
         data = time_distribution_service.get_time_distribution(start_date, end_date, store_id)
         
-        # 构建响应
         response = TimeDistributionResponse(
             data=data
         )
@@ -77,10 +77,7 @@ async def export_footfall_report(
     - **store_id**: 门店ID（可选）
     - **format**: 导出格式 (pdf/excel)
     """
-    # 权限检查由require_role依赖处理
-    
     try:
-        # 验证时间范围
         from datetime import datetime
         start = datetime.strptime(request.start_date, "%Y-%m-%d")
         end = datetime.strptime(request.end_date, "%Y-%m-%d")
@@ -88,33 +85,26 @@ async def export_footfall_report(
         if start > end:
             raise HTTPException(status_code=400, detail="开始日期不能晚于结束日期")
         
-        # 验证导出格式
         if request.format not in ["pdf", "excel"]:
             raise HTTPException(status_code=400, detail="不支持的导出格式，支持的格式：pdf, excel")
         
-        # 获取客流数据
         raw_data, hourly_counts = export_service.get_footfall_data(
             request.start_date, 
             request.end_date, 
             request.store_id
         )
         
-        # 根据格式生成文件
         if request.format == "excel":
-            # 生成CSV文件（作为Excel的替代）
             output = io.StringIO()
             writer = csv.writer(output)
             
-            # 写入表头
             writer.writerow(["小时", "客流量"])
             
-            # 写入数据
             for hour, count in sorted(hourly_counts.items()):
                 writer.writerow([hour, count])
             
             output.seek(0)
             
-            # 构建响应
             return Response(
                 content=output.getvalue(),
                 media_type="text/csv",
@@ -123,26 +113,21 @@ async def export_footfall_report(
                 }
             )
         elif request.format == "pdf":
-            # 使用reportlab生成真正的PDF文件，支持中文
             from reportlab.pdfbase.cidfonts import UnicodeCIDFont
             
-            # 注册中文字体
             try:
                 pdfmetrics.registerFont(UnicodeCIDFont('STSong-Light'))
                 chinese_font = 'STSong-Light'
             except:
-                # 如果STSong-Light不可用，尝试使用其他中文字体
                 try:
                     pdfmetrics.registerFont(UnicodeCIDFont('AdobeSongStd-Light'))
                     chinese_font = 'AdobeSongStd-Light'
                 except:
-                    # 如果都不可用，使用默认字体（中文会显示为方框）
                     chinese_font = 'Helvetica'
             
             buffer = io.BytesIO()
             doc = SimpleDocTemplate(buffer, pagesize=A4)
             
-            # 创建样式
             styles = getSampleStyleSheet()
             title_style = ParagraphStyle(
                 'CustomTitle',
@@ -150,7 +135,7 @@ async def export_footfall_report(
                 fontName=chinese_font,
                 fontSize=24,
                 spaceAfter=30,
-                alignment=1  # 居中
+                alignment=1
             )
             
             info_style = ParagraphStyle(
@@ -160,25 +145,20 @@ async def export_footfall_report(
                 fontSize=12
             )
             
-            # 构建PDF内容
             elements = []
             
-            # 标题
             elements.append(Paragraph("客流分析报告", title_style))
             elements.append(Spacer(1, 20))
             
-            # 基本信息
             elements.append(Paragraph(f"<b>时间范围：</b>{request.start_date} 至 {request.end_date}", info_style))
             if request.store_id:
                 elements.append(Paragraph(f"<b>门店ID：</b>{request.store_id}", info_style))
             elements.append(Spacer(1, 20))
             
-            # 数据表格
             table_data = [["小时", "客流量"]]
             for hour, count in sorted(hourly_counts.items()):
                 table_data.append([hour, str(count)])
             
-            # 创建表格
             table = Table(table_data, colWidths=[200, 200])
             table.setStyle(TableStyle([
                 ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
@@ -197,10 +177,8 @@ async def export_footfall_report(
             
             elements.append(table)
             
-            # 生成PDF
             doc.build(elements)
             
-            # 获取PDF内容
             pdf_content = buffer.getvalue()
             buffer.close()
             
@@ -215,3 +193,60 @@ async def export_footfall_report(
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"导出客流分析报告失败: {str(e)}")
+
+
+@footfall_router.get("/week-comparison", response_model=WeekComparisonResponse)
+async def get_week_comparison(
+    store_id: Optional[str] = Query(None, description="门店ID（可选）"),
+    current_user = Depends(require_role(["operations_manager"], mode="in"))
+):
+    """获取本周与上周每小时客流对比
+    
+    - **store_id**: 门店ID（可选）
+    """
+    try:
+        data = comparison_service.get_week_comparison(store_id)
+        return WeekComparisonResponse(data=data)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"获取周对比数据失败: {str(e)}")
+
+
+@footfall_router.get("/weekend-weekday-comparison", response_model=WeekendWeekdayResponse)
+async def get_weekend_weekday_comparison(
+    store_id: Optional[str] = Query(None, description="门店ID（可选）"),
+    current_user = Depends(require_role(["operations_manager"], mode="in"))
+):
+    """获取工作日与周末每小时客流对比
+    
+    - **store_id**: 门店ID（可选）
+    """
+    try:
+        data = comparison_service.get_weekend_weekday_comparison(store_id)
+        return WeekendWeekdayResponse(data=data)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"获取周末工作日对比数据失败: {str(e)}")
+
+
+@footfall_router.get("/forecast", response_model=ForecastResponse)
+async def get_forecast_data(
+    date: str = Query(..., description="预测日期 (YYYY-MM-DD)"),
+    store_id: Optional[str] = Query(None, description="门店ID（可选）"),
+    current_user = Depends(require_role(["operations_manager"], mode="in"))
+):
+    """获取预测客流数据
+    
+    基于历史数据生成预测值
+    
+    - **date**: 预测日期 (YYYY-MM-DD)
+    - **store_id**: 门店ID（可选）
+    """
+    try:
+        from datetime import datetime
+        datetime.strptime(date, "%Y-%m-%d")
+        
+        data = forecast_service.get_forecast_data(date, store_id)
+        return ForecastResponse(data=data)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=f"日期格式错误: {str(e)}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"获取预测数据失败: {str(e)}")

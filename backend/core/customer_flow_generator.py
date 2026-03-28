@@ -1,5 +1,6 @@
 # 客流数据生成器模块
 # 实现每小时生成所有门店的客流数据，符合生鲜超市的一般规律
+# 使用北京时间（UTC+8）
 
 import os
 import time
@@ -16,6 +17,25 @@ except ImportError:
     from hdfs_client import hdfs_client
 
 
+# 北京时区偏移量（UTC+8）
+BEIJING_OFFSET = timedelta(hours=8)
+
+
+def get_beijing_time() -> datetime:
+    """获取当前北京时间"""
+    utc_now = datetime.now(timezone.utc)
+    beijing_now = utc_now + BEIJING_OFFSET
+    return beijing_now.replace(tzinfo=None)
+
+
+def utc_to_beijing(utc_time: datetime) -> datetime:
+    """将UTC时间转换为北京时间"""
+    if utc_time.tzinfo is None:
+        utc_time = utc_time.replace(tzinfo=timezone.utc)
+    beijing_time = utc_time + BEIJING_OFFSET
+    return beijing_time.replace(tzinfo=None)
+
+
 class CustomerFlowGenerator:
     """客流数据生成器类"""
     
@@ -29,7 +49,7 @@ class CustomerFlowGenerator:
         
         Args:
             store_id: 门店ID
-            timestamp: 时间戳
+            timestamp: 时间戳（北京时间）
             
         Returns:
             客流数据字典
@@ -101,7 +121,7 @@ class CustomerFlowGenerator:
         """为所有门店生成客流数据
         
         Args:
-            timestamp: 时间戳
+            timestamp: 时间戳（北京时间）
             
         Returns:
             所有门店的客流数据列表
@@ -120,9 +140,9 @@ class CustomerFlowGenerator:
         
         Args:
             data: 客流数据列表
-            timestamp: 时间戳
+            timestamp: 时间戳（北京时间）
         """
-        # 构建HDFS存储路径
+        # 构建HDFS存储路径（使用北京时间）
         date_str = timestamp.strftime("%Y-%m-%d")
         hour_str = timestamp.strftime("%H")
         hdfs_path = f"/customer_flow/{date_str}/{hour_str}"
@@ -180,8 +200,9 @@ class CustomerFlowGenerator:
     
     def delete_old_data(self):
         """删除超过保留年限的数据"""
-        # 计算保留期限
-        retention_date = datetime.now(timezone.utc) - timedelta(days=self.data_retention_years * 365)
+        # 计算保留期限（使用北京时间）
+        beijing_now = get_beijing_time()
+        retention_date = beijing_now - timedelta(days=self.data_retention_years * 365)
         retention_date_str = retention_date.strftime("%Y-%m-%d")
         
         # 检查并删除早于保留日期的所有数据
@@ -212,12 +233,12 @@ class CustomerFlowGenerator:
         """检查指定时间的数据是否存在
         
         Args:
-            timestamp: 时间戳
+            timestamp: 时间戳（北京时间）
             
         Returns:
             数据是否存在
         """
-        # 构建HDFS路径
+        # 构建HDFS路径（使用北京时间）
         date_str = timestamp.strftime("%Y-%m-%d")
         hour_str = timestamp.strftime("%H")
         hdfs_path = f"/customer_flow/{date_str}/{hour_str}/data.json"
@@ -237,38 +258,56 @@ class CustomerFlowGenerator:
                     print("All retry attempts failed")
                     return False
     
-    def complete_missing_data(self):
-        """补全缺失的客流数据"""
-        # 获取当前时间，调整到最近的整点
-        now = datetime.now(timezone.utc)
-        current_hour = now.replace(minute=0, second=0, microsecond=0)
+    def complete_missing_data(self, hours: int = 24):
+        """补全缺失的客流数据
         
-        # 检查最近24小时的数据
-        for i in range(24):
+        Args:
+            hours: 要补全数据的小时数，默认24小时（1天），可设置为168（1周）或720（30天）
+        """
+        # 获取当前北京时间，调整到最近的整点
+        beijing_now = get_beijing_time()
+        current_hour = beijing_now.replace(minute=0, second=0, microsecond=0)
+        
+        print(f"Starting to complete missing data for the past {hours} hours...")
+        generated_count = 0
+        
+        # 检查指定时间范围的数据
+        for i in range(hours):
             check_time = current_hour - timedelta(hours=i)
             
             # 检查数据是否存在
             if not self.check_data_exists(check_time):
-                print(f"Missing data for {check_time}, generating...")
+                print(f"Missing data for {check_time} (Beijing Time), generating...")
                 
                 # 生成缺失的数据
                 data = self.generate_for_all_stores(check_time)
                 
                 # 存储到HDFS
                 self.save_to_hdfs(data, check_time)
-                print(f"Completed missing data for {check_time}")
+                print(f"Completed missing data for {check_time} (Beijing Time)")
+                generated_count += 1
+        
+        print(f"Data completion finished. Generated {generated_count} missing records.")
     
-    def run(self):
-        """运行客流数据生成器"""
-        # 获取当前时间，调整到最近的整点
-        now = datetime.now(timezone.utc)
-        current_hour = now.replace(minute=0, second=0, microsecond=0)
+    def run(self, complete_hours: int = 24):
+        """运行客流数据生成器
+        
+        Args:
+            complete_hours: 补全历史数据的小时数，默认24小时（1天），
+                          可设置为168（1周）或720（30天）
+        """
+        # 获取当前北京时间，调整到最近的整点
+        beijing_now = get_beijing_time()
+        current_hour = beijing_now.replace(minute=0, second=0, microsecond=0)
+        
+        print(f"Current Beijing Time: {beijing_now}")
+        print(f"Generating data for hour: {current_hour}")
         
         # 生成所有门店的客流数据
         data = self.generate_for_all_stores(current_hour)
         
         # 打印生成的数据
-        print(f"Generated customer flow data for {current_hour}:")
+        print(f"Generated customer flow data for {current_hour} (Beijing Time):")
         for item in data:
             print(json.dumps(item, ensure_ascii=False))
         
@@ -278,8 +317,8 @@ class CustomerFlowGenerator:
         # 删除过期数据
         self.delete_old_data()
         
-        # 补全缺失数据
-        self.complete_missing_data()
+        # 补全缺失数据（支持配置时间范围）
+        self.complete_missing_data(hours=complete_hours)
 
 
 if __name__ == "__main__":

@@ -16,3 +16,4 @@ uuid-utils
 APScheduler
 kafka-python
 requests
+reportlab
