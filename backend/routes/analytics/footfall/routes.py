@@ -6,6 +6,12 @@ from fastapi.responses import Response, StreamingResponse
 from typing import Optional, IO
 import io
 import csv
+from reportlab.lib.pagesizes import A4
+from reportlab.lib import colors
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
 from .schemas import TimeDistributionResponse, TimeDistributionQuery, ExportRequest
 from .service import TimeDistributionService, ExportService
 from core.permitions import require_role
@@ -117,19 +123,89 @@ async def export_footfall_report(
                 }
             )
         elif request.format == "pdf":
-            # 生成简单的PDF文件
-            # 注意：实际项目中需要使用PDF库如reportlab
-            # 这里为了演示，生成一个简单的文本文件
-            content = f"客流分析报告\n"
-            content += f"时间范围：{request.start_date} 至 {request.end_date}\n"
+            # 使用reportlab生成真正的PDF文件，支持中文
+            from reportlab.pdfbase.cidfonts import UnicodeCIDFont
+            
+            # 注册中文字体
+            try:
+                pdfmetrics.registerFont(UnicodeCIDFont('STSong-Light'))
+                chinese_font = 'STSong-Light'
+            except:
+                # 如果STSong-Light不可用，尝试使用其他中文字体
+                try:
+                    pdfmetrics.registerFont(UnicodeCIDFont('AdobeSongStd-Light'))
+                    chinese_font = 'AdobeSongStd-Light'
+                except:
+                    # 如果都不可用，使用默认字体（中文会显示为方框）
+                    chinese_font = 'Helvetica'
+            
+            buffer = io.BytesIO()
+            doc = SimpleDocTemplate(buffer, pagesize=A4)
+            
+            # 创建样式
+            styles = getSampleStyleSheet()
+            title_style = ParagraphStyle(
+                'CustomTitle',
+                parent=styles['Heading1'],
+                fontName=chinese_font,
+                fontSize=24,
+                spaceAfter=30,
+                alignment=1  # 居中
+            )
+            
+            info_style = ParagraphStyle(
+                'InfoStyle',
+                parent=styles["Normal"],
+                fontName=chinese_font,
+                fontSize=12
+            )
+            
+            # 构建PDF内容
+            elements = []
+            
+            # 标题
+            elements.append(Paragraph("客流分析报告", title_style))
+            elements.append(Spacer(1, 20))
+            
+            # 基本信息
+            elements.append(Paragraph(f"<b>时间范围：</b>{request.start_date} 至 {request.end_date}", info_style))
             if request.store_id:
-                content += f"门店ID：{request.store_id}\n"
-            content += "\n小时客流量分布：\n"
+                elements.append(Paragraph(f"<b>门店ID：</b>{request.store_id}", info_style))
+            elements.append(Spacer(1, 20))
+            
+            # 数据表格
+            table_data = [["小时", "客流量"]]
             for hour, count in sorted(hourly_counts.items()):
-                content += f"{hour}: {count}\n"
+                table_data.append([hour, str(count)])
+            
+            # 创建表格
+            table = Table(table_data, colWidths=[200, 200])
+            table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                ('FONTNAME', (0, 0), (-1, 0), chinese_font),
+                ('FONTSIZE', (0, 0), (-1, 0), 14),
+                ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+                ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+                ('GRID', (0, 0), (-1, -1), 1, colors.black),
+                ('FONTNAME', (0, 1), (-1, -1), chinese_font),
+                ('FONTSIZE', (0, 1), (-1, -1), 12),
+                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ]))
+            
+            elements.append(table)
+            
+            # 生成PDF
+            doc.build(elements)
+            
+            # 获取PDF内容
+            pdf_content = buffer.getvalue()
+            buffer.close()
             
             return Response(
-                content=content,
+                content=pdf_content,
                 media_type="application/pdf",
                 headers={
                     "Content-Disposition": f"attachment; filename=footfall_report_{request.start_date}_{request.end_date}.pdf"
