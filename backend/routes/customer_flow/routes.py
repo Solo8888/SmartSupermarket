@@ -1,39 +1,47 @@
-from sqlalchemy.orm import Session
-from fastapi import APIRouter, Depends
-from models import get_db, User
-from core.permitions import require_role
+# 客流数据路由
+# 提供客流数据查询的API接口
 
-from .schemas import CustomerFlowHourlyRequest, CustomerFlowHourlyResponse
+from fastapi import APIRouter, HTTPException, Query
+from datetime import datetime
+from typing import Optional
+from .schemas import CustomerFlowQuery, CustomerFlowListResponse
 from .service import CustomerFlowService
 
-# 创建客流分析路由器
-customer_flow_router = APIRouter(prefix='/customer-flow', tags=['customer_flow'])
+customer_flow_router = APIRouter(
+    prefix="/customer-flow",
+    tags=["customer_flow"],
+    responses={404: {"description": "Not found"}},
+)
+
+customer_flow_service = CustomerFlowService()
 
 
-@customer_flow_router.post('/hourly', response_model=CustomerFlowHourlyResponse)
-async def get_hourly_customer_flow(
-    request: CustomerFlowHourlyRequest,
-    db: Session = Depends(get_db),
-    user: User = Depends(require_role('operations_manager'))
+@customer_flow_router.get("/", response_model=CustomerFlowListResponse)
+async def get_customer_flow(
+    start_time: datetime = Query(..., description="开始时间"),
+    end_time: datetime = Query(..., description="结束时间"),
+    store_id: Optional[str] = Query(None, description="门店ID")
 ):
-    """
-    获取各时段客流分布接口
-
-    Args:
-        request: 获取各时段客流分布请求体
-        db: 数据库会话
-        user: 当前用户
-
-    Returns:
-        各时段客流分布响应
-    """
-    hourly_data = CustomerFlowService.get_hourly_customer_flow(
-        db, str(request.store_id), request.start_date, request.end_date
-    )
+    """获取客流数据
     
-    return CustomerFlowHourlyResponse(
-        store_id=request.store_id,
-        start_date=request.start_date,
-        end_date=request.end_date,
-        data=hourly_data
-    )
+    - **start_time**: 开始时间
+    - **end_time**: 结束时间
+    - **store_id**: 门店ID（可选）
+    """
+    try:
+        # 验证时间范围
+        if start_time > end_time:
+            raise HTTPException(status_code=400, detail="开始时间不能晚于结束时间")
+        
+        # 获取客流数据
+        data = customer_flow_service.get_customer_flow_data(start_time, end_time, store_id)
+        
+        # 构建响应
+        response = CustomerFlowListResponse(
+            data=data,
+            total=len(data)
+        )
+        
+        return response
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"获取客流数据失败: {str(e)}")

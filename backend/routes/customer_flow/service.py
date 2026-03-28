@@ -1,62 +1,108 @@
-from sqlalchemy.orm import Session
-from datetime import date
-from typing import List, Dict
+# 客流数据服务
+# 实现客流数据的查询逻辑
+
 import os
-from dotenv import load_dotenv
+import json
+import time
+from datetime import datetime, timedelta
+from typing import List, Dict, Any, Optional
+from .schemas import CustomerFlowResponse
 
-from .schemas import CustomerFlowHourlyItem
-
-# 加载环境变量
-load_dotenv()
+from ..core.hdfs_client import hdfs_client
 
 
 class CustomerFlowService:
-    """客流分析服务"""
-
-    @staticmethod
-    def get_hourly_customer_flow(db: Session, store_id: str, start_date: date, end_date: date) -> List[CustomerFlowHourlyItem]:
-        """
-        获取各时段客流分布
-
-        Args:
-            db: 数据库会话
-            store_id: 门店ID
-            start_date: 开始日期
-            end_date: 结束日期
-
-        Returns:
-            各时段客流分布列表
-        """
-        hourly_data = []
-        try:
-            # 模拟 Hive 查询，返回模拟数据
-            # 实际部署时，这里应该连接 Hive 执行真实查询
-            print(f"Mock query: Getting hourly customer flow for store {store_id} from {start_date} to {end_date}")
-            
-            # 生成模拟数据
-            flow_by_hour = {hour: 0 for hour in range(24)}
-            for hour in range(24):
-                if 9 <= hour <= 12 or 17 <= hour <= 20:
-                    # 高峰期客流较多
-                    flow_count = 150 + (hour - 9) * 20 if hour <= 12 else 150 + (20 - hour) * 20
-                else:
-                    # 低峰期客流较少
-                    flow_count = 50 + hour * 2 if hour < 9 else 50 + (23 - hour) * 2
-                flow_by_hour[hour] = flow_count
-            
-            # 转换为响应格式
-            for hour in range(24):
-                hourly_data.append(CustomerFlowHourlyItem(hour=hour, flow_count=flow_by_hour[hour]))
-        except Exception as e:
-            print(f"Error querying customer flow data: {e}")
-            # 如果出错，使用模拟数据
-            for hour in range(24):
-                if 9 <= hour <= 12 or 17 <= hour <= 20:
-                    # 高峰期客流较多
-                    flow_count = 150 + (hour - 9) * 20 if hour <= 12 else 150 + (20 - hour) * 20
-                else:
-                    # 低峰期客流较少
-                    flow_count = 50 + hour * 2 if hour < 9 else 50 + (23 - hour) * 2
-                hourly_data.append(CustomerFlowHourlyItem(hour=hour, flow_count=flow_count))
+    """客流数据服务类"""
+    
+    def get_customer_flow_data(self, start_time: datetime, end_time: datetime, store_id: Optional[str] = None) -> List[CustomerFlowResponse]:
+        """获取客流数据
         
-        return hourly_data
+        Args:
+            start_time: 开始时间
+            end_time: 结束时间
+            store_id: 门店ID（可选）
+            
+        Returns:
+            客流数据列表
+        """
+        data_list = []
+        
+        # 遍历时间范围，获取每个小时的数据
+        current_time = start_time.replace(minute=0, second=0, microsecond=0)
+        while current_time <= end_time:
+            # 构建HDFS路径
+            date_str = current_time.strftime("%Y-%m-%d")
+            hour_str = current_time.strftime("%H")
+            hdfs_path = f"/customer_flow/{date_str}/{hour_str}/data.json"
+            
+            # 检查文件是否存在
+            if self._file_exists(hdfs_path):
+                # 读取文件内容
+                file_content = self._read_hdfs_file(hdfs_path)
+                if file_content:
+                    # 解析JSON数据
+                    try:
+                        data = json.loads(file_content)
+                        
+                        # 过滤门店ID（如果指定）
+                        if store_id:
+                            data = [item for item in data if item.get("store_id") == store_id]
+                        
+                        # 转换为响应模型
+                        for item in data:
+                            # 转换时间字符串为datetime对象
+                            item["timestamp"] = datetime.strptime(item["timestamp"], "%Y-%m-%d %H:%M:%S")
+                            data_list.append(CustomerFlowResponse(**item))
+                    except json.JSONDecodeError as e:
+                        print(f"Error parsing JSON: {e}")
+            
+            # 移动到下一个小时
+            current_time += timedelta(hours=1)
+        
+        return data_list
+    
+    def _file_exists(self, hdfs_path: str) -> bool:
+        """检查HDFS文件是否存在
+        
+        Args:
+            hdfs_path: HDFS文件路径
+            
+        Returns:
+            文件是否存在
+        """
+        retries = 3
+        for attempt in range(retries):
+            try:
+                # 使用WebHDFS客户端检查文件
+                return hdfs_client.exists(hdfs_path)
+            except Exception as e:
+                print(f"Error checking file existence (attempt {attempt + 1}/{retries}): {e}")
+                if attempt < retries - 1:
+                    print("Retrying...")
+                    time.sleep(2)
+                else:
+                    print("All retry attempts failed")
+                    return False
+    
+    def _read_hdfs_file(self, hdfs_path: str) -> Optional[str]:
+        """读取HDFS文件内容
+        
+        Args:
+            hdfs_path: HDFS文件路径
+            
+        Returns:
+            文件内容
+        """
+        retries = 3
+        for attempt in range(retries):
+            try:
+                # 使用WebHDFS客户端读取文件
+                return hdfs_client.read_file(hdfs_path)
+            except Exception as e:
+                print(f"Error reading HDFS file (attempt {attempt + 1}/{retries}): {e}")
+                if attempt < retries - 1:
+                    print("Retrying...")
+                    time.sleep(2)
+                else:
+                    print("All retry attempts failed")
+                    return None

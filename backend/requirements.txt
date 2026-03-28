@@ -15,4 +15,4 @@ xlrd
 uuid-utils
 APScheduler
 kafka-python
-pyspark
+requests
