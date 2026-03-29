@@ -344,6 +344,39 @@ const handleReset = () => {
   fetchAssociationRules()
 }
 
+// 导出关联规则
+const handleExport = async () => {
+  if (!queryParams.value.start_date || !queryParams.value.end_date) {
+    alert('请选择开始日期和结束日期')
+    return
+  }
+  
+  try {
+    const response = await associationRulesApi.exportAssociationRules({
+      start_date: queryParams.value.start_date,
+      end_date: queryParams.value.end_date,
+      min_support: queryParams.value.min_support,
+      min_confidence: queryParams.value.min_confidence
+    })
+    
+    // 创建下载链接
+    const blob = new Blob([response.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `association_rules_${queryParams.value.start_date}_${queryParams.value.end_date}.xlsx`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    window.URL.revokeObjectURL(url)
+    
+    alert('导出成功')
+  } catch (err) {
+    console.error('导出关联规则失败:', err)
+    alert('导出失败，请重试')
+  }
+}
+
 onMounted(() => {
   initDefaultDates()
   fetchAssociationRules()
@@ -408,6 +441,9 @@ onMounted(() => {
             </button>
             <button class="btn btn-secondary" @click="handleReset">
               重置
+            </button>
+            <button class="btn btn-success" @click="handleExport">
+              导出
             </button>
           </div>
         </div>
@@ -630,6 +666,15 @@ onMounted(() => {
 
 .btn-secondary:hover {
   background-color: #e5e7eb;
+}
+
+.btn-success {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+}
+
+.btn-success:hover {
+  opacity: 0.9;
 }
 
 /* 统计卡片 */
