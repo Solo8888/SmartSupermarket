@@ -50,3 +50,5 @@ request.interceptors.response.use(
 )
 
 export default request
+
+export const reportAPI = require('./report').default

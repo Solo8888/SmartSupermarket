@@ -83,6 +83,12 @@ const routes = [
         name: 'AssociationRules',
         component: () => import('../views/admin/AssociationRules.vue'),
         meta: { title: '关联规则分析', requiresRole: 'operations_manager' }
+      },
+      {
+        path: 'reports',
+        name: 'Reports',
+        component: () => import('../views/admin/Reports.vue'),
+        meta: { title: '运营报表', requiresRole: 'operations_manager' }
       }
     ]
   },
