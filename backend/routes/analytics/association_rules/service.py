@@ -5,6 +5,8 @@ from sqlalchemy import and_
 from models.order import Order, OrderItem
 from .schemas import AssociationRule, AssociationRulesResponse
 import uuid
+import io
+from openpyxl import Workbook
 
 
 class AprioriAlgorithm:
@@ -221,3 +223,50 @@ class AssociationRulesService:
         rules = apriori.generate_association_rules(frequent_itemsets)
         
         return AssociationRulesResponse(rules=rules)
+    
+    def export_association_rules(self, db, start_date, end_date, 
+                               min_support=0.01, min_confidence=0.5):
+        """导出商品关联规则为 Excel 文件
+        
+        Args:
+            db: 数据库会话
+            start_date: 开始日期 (YYYY-MM-DD)
+            end_date: 结束日期 (YYYY-MM-DD)
+            min_support: 最小支持度 (0-1)
+            min_confidence: 最小置信度 (0-1)
+            
+        Returns:
+            BytesIO: Excel 文件的字节流
+        """
+        # 获取关联规则数据
+        rules_response = self.get_association_rules(db, start_date, end_date, min_support, min_confidence)
+        rules = rules_response.rules
+        
+        # 创建 Excel 工作簿
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "关联规则"
+        
+        # 设置表头
+        headers = ["规则 ID", "前项", "后项", "支持度", "置信度"]
+        for col, header in enumerate(headers, 1):
+            ws.cell(row=1, column=col, value=header)
+        
+        # 填充数据
+        for row, rule in enumerate(rules, 2):
+            ws.cell(row=row, column=1, value=rule.rule_id)
+            ws.cell(row=row, column=2, value=", ".join(rule.antecedent))
+            ws.cell(row=row, column=3, value=", ".join(rule.consequent))
+            ws.cell(row=row, column=4, value=rule.support)
+            ws.cell(row=row, column=5, value=rule.confidence)
+        
+        # 调整列宽
+        for col in range(1, 6):
+            ws.column_dimensions[chr(64 + col)].auto_size = True
+        
+        # 将 Excel 文件保存到 BytesIO
+        output = io.BytesIO()
+        wb.save(output)
+        output.seek(0)
+        
+        return output
