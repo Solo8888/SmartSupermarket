@@ -89,6 +89,12 @@ const routes = [
         name: 'Reports',
         component: () => import('../views/admin/Reports.vue'),
         meta: { title: '运营报表', requiresRole: 'operations_manager' }
+      },
+      {
+        path: 'user-profiles',
+        name: 'UserProfiles',
+        component: () => import('../views/admin/UserProfiles.vue'),
+        meta: { title: '用户画像分析', requiresRole: 'operations_manager' }
       }
     ]
   },
@@ -170,7 +176,7 @@ const router = createRouter({
   routes
 })
 
-router.beforeEach((to, from, next) => {
+router.beforeEach((to, from) => {
   const accessToken = localStorage.getItem('access_token')
   const userInfoStr = localStorage.getItem('user_info')
   let userInfo = null
@@ -206,45 +212,45 @@ router.beforeEach((to, from, next) => {
   }
   
   if (to.meta.requiresAuth && !isAuthenticated) {
-    next('/login')
+    return '/login'
   } else if (to.meta.requiresRole && !hasPermission(to.meta.requiresRole)) {
-    next('/home')
+    return '/home'
   } else if (to.meta.requiresRoles && !to.meta.requiresRoles.includes(userRole)) {
-    next('/home')
+    return '/home'
   } else if (to.path === '/admin' && userRole === 'operations_manager') {
-    next('/admin/promotions')
+    return '/admin/promotions'
   } else if (to.path === '/admin' && userRole === 'inventory_manager') {
-    next('/admin/inventory')
+    return '/admin/inventory'
   } else if (to.path === '/admin' && userRole === 'system_admin') {
-    next('/admin/categories')
+    return '/admin/categories'
   } else if (to.path === '/admin' && userRole === 'customer') {
-    next('/customer/home')
+    return '/customer/home'
   } else if ((to.path === '/login' || to.path === '/register') && isAuthenticated) {
     if (isManager) {
       if (userRole === 'operations_manager') {
-        next('/admin/promotions')
+        return '/admin/promotions'
       } else if (userRole === 'system_admin') {
-        next('/admin/categories')
+        return '/admin/categories'
       } else {
-        next('/admin/inventory')
+        return '/admin/inventory'
       }
     } else if (isCustomer) {
-      next('/customer/home')
+      return '/customer/home'
     }
   } else if (to.path === '/home' && isAuthenticated) {
     if (isManager) {
       if (userRole === 'operations_manager') {
-        next('/admin/promotions')
+        return '/admin/promotions'
       } else if (userRole === 'system_admin') {
-        next('/admin/categories')
+        return '/admin/categories'
       } else {
-        next('/admin/inventory')
+        return '/admin/inventory'
       }
     } else if (isCustomer) {
-      next('/customer/home')
+      return '/customer/home'
     }
   } else {
-    next()
+    return true
   }
 })
 

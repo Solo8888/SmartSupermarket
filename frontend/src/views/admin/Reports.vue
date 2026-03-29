@@ -171,6 +171,9 @@
             <el-radio label="json">JSON</el-radio>
           </el-radio-group>
         </el-form-item>
+        <el-form-item label="包含图表" v-if="exportForm.format === 'excel'">
+          <el-switch v-model="exportForm.includeCharts" active-text="是" inactive-text="否" />
+        </el-form-item>
       </el-form>
       <template #footer>
         <span class="dialog-footer">
@@ -212,7 +215,8 @@ export default {
     const currentPage = ref(1)
     const exportDialogVisible = ref(false)
     const exportForm = ref({
-      format: 'csv'
+      format: 'csv',
+      includeCharts: true
     })
     
     // 方法
@@ -370,14 +374,21 @@ export default {
       loading.value = true
       try {
         const [startDate, endDate] = filterForm.value.dateRange || []
-        const response = await reportAPI.exportReport({
+        const exportParams = {
           report_type: activeReportType.value,
           start_date: startDate,
           end_date: endDate,
           store_id: filterForm.value.storeId,
           category_id: filterForm.value.categoryId,
           format: exportForm.value.format
-        })
+        }
+        
+        // 仅当选择Excel格式时才添加include_charts参数
+        if (exportForm.value.format === 'excel') {
+          exportParams.include_charts = exportForm.value.includeCharts
+        }
+        
+        const response = await reportAPI.exportReport(exportParams)
         
         // 下载文件
         const link = document.createElement('a')

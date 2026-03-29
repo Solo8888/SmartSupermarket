@@ -30,15 +30,33 @@
       <template #header>
         <div class="card-header-with-date">
           <span>时段客流分布</span>
-          <el-date-picker
-            v-model="distributionDate"
-            type="date"
-            placeholder="选择日期"
-            value-format="YYYY-MM-DD"
-            @change="handleDistributionDateChange"
-            size="small"
-            style="width: 150px;"
-          />
+          <div class="header-actions">
+            <el-date-picker
+              v-model="distributionDate"
+              type="date"
+              placeholder="选择日期"
+              value-format="YYYY-MM-DD"
+              @change="handleDistributionDateChange"
+              size="small"
+              style="width: 150px;"
+            />
+            <el-dropdown trigger="click" class="ml-2">
+              <el-button size="small" type="primary" :icon="Download">
+                导出
+                <el-icon class="el-icon--right"><ArrowDown /></el-icon>
+              </el-button>
+              <template #dropdown>
+                <el-dropdown-menu>
+                  <el-dropdown-item @click="handleDistributionExport('excel')">
+                    Excel
+                  </el-dropdown-item>
+                  <el-dropdown-item @click="handleDistributionExport('pdf')">
+                    PDF
+                  </el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
+          </div>
         </div>
       </template>
       <div class="chart-container">
@@ -150,6 +168,7 @@ const loadUserStore = async () => {
       selectedStoreId.value = stores[0].store_id
       currentStoreName.value = stores[0].store_name || stores[0].name || '未知门店'
       loadCustomerFlowData()
+      loadDistributionData()
       loadComparisonData()
     } else {
       console.error('当前用户没有管理的门店')
@@ -647,6 +666,49 @@ const handleExport = async (format) => {
   } catch (error) {
     console.error('导出报告失败:', error)
     ElMessage.error('导出报告失败')
+  }
+}
+
+const handleDistributionExport = async (format) => {
+  try {
+    const date = distributionDate.value
+    if (!date) {
+      ElMessage.warning('请选择日期')
+      return
+    }
+    
+    const response = await customerFlowApi.exportReport(
+      date,
+      date,
+      format,
+      selectedStoreId.value
+    )
+    
+    // 创建下载链接
+    let contentType = ''
+    let extension = ''
+    if (format === 'pdf') {
+      contentType = 'application/pdf'
+      extension = 'pdf'
+    } else if (format === 'excel') {
+      contentType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      extension = 'xlsx'
+    }
+    
+    const blob = new Blob([response], { type: contentType })
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `distribution_report_${date}.${extension}`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(url)
+    
+    ElMessage.success('时段客流分布导出成功')
+  } catch (error) {
+    console.error('导出时段客流分布失败:', error)
+    ElMessage.error('导出失败')
   }
 }
 

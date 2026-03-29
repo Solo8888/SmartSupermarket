@@ -51,4 +51,6 @@ request.interceptors.response.use(
 
 export default request
 
-export const reportAPI = require('./report').default
+import reportAPI from './report'
+import userProfileAPI from './userProfile'
+export { reportAPI, userProfileAPI }

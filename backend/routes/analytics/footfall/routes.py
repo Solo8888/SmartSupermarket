@@ -6,12 +6,19 @@ from fastapi.responses import Response, StreamingResponse
 from typing import Optional, IO
 import io
 import csv
+import json
 from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.graphics.charts.lineplots import LinePlot
+from reportlab.graphics.shapes import Drawing, String
+from reportlab.graphics.charts.axes import XCategoryAxis
+from reportlab.graphics.charts.textlabels import Label
+from openpyxl import Workbook
+from openpyxl.chart import LineChart, Reference
 from .schemas import (
     TimeDistributionResponse, TimeDistributionQuery, ExportRequest,
     WeekComparisonResponse, WeekendWeekdayResponse, ForecastResponse
@@ -95,21 +102,63 @@ async def export_footfall_report(
         )
         
         if request.format == "excel":
-            output = io.StringIO()
-            writer = csv.writer(output)
+            # 创建Excel工作簿
+            wb = Workbook()
+            ws = wb.active
+            ws.title = "时段客流分布"
             
-            writer.writerow(["小时", "客流量"])
+            # 添加标题
+            ws['A1'] = "客流分析报告"
+            ws['A3'] = f"时间范围：{request.start_date} 至 {request.end_date}"
+            if request.store_id:
+                ws['A4'] = f"门店ID：{request.store_id}"
             
+            # 添加表头
+            ws['A6'] = "小时"
+            ws['B6'] = "客流量"
+            
+            # 添加数据
+            row = 7
+            hours = []
+            counts = []
             for hour, count in sorted(hourly_counts.items()):
-                writer.writerow([hour, count])
+                ws[f'A{row}'] = hour
+                ws[f'B{row}'] = count
+                hours.append(hour)
+                counts.append(count)
+                row += 1
             
+            # 添加图表
+            chart = LineChart()
+            chart.title = "时段客流分布"
+            chart.style = 13
+            chart.x_axis.title = "小时"
+            chart.y_axis.title = "客流量"
+            
+            # 设置数据范围
+            data = Reference(ws, min_col=2, min_row=6, max_row=row-1)
+            categories = Reference(ws, min_col=1, min_row=7, max_row=row-1)
+            chart.add_data(data, titles_from_data=True)
+            chart.set_categories(categories)
+            
+            # 将图表添加到工作表
+            ws.add_chart(chart, "D6")
+            
+            # 调整列宽
+            ws.column_dimensions['A'].width = 10
+            ws.column_dimensions['B'].width = 10
+            ws.column_dimensions['D'].width = 30
+            
+            # 保存到内存
+            output = io.BytesIO()
+            wb.save(output)
             output.seek(0)
             
             return Response(
                 content=output.getvalue(),
-                media_type="text/csv",
+                media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                 headers={
-                    "Content-Disposition": f"attachment; filename=footfall_report_{request.start_date}_{request.end_date}.csv"
+                    "Content-Disposition": f"attachment; filename=footfall_report_{request.start_date}_{request.end_date}.xlsx"
                 }
             )
         elif request.format == "pdf":
@@ -155,6 +204,55 @@ async def export_footfall_report(
                 elements.append(Paragraph(f"<b>门店ID：</b>{request.store_id}", info_style))
             elements.append(Spacer(1, 20))
             
+            # 添加图表
+            elements.append(Paragraph("<b>时段客流分布图表</b>", info_style))
+            elements.append(Spacer(1, 10))
+            
+            # 创建柱状图
+            from reportlab.graphics.charts.barcharts import VerticalBarChart
+            from reportlab.graphics.shapes import Drawing
+            
+            drawing = Drawing(500, 300)
+            
+            # 准备数据
+            hours = []
+            counts = []
+            for hour, count in sorted(hourly_counts.items()):
+                hours.append(hour)
+                counts.append(count)
+            
+            # 创建柱状图
+            chart = VerticalBarChart()
+            chart.x = 60
+            chart.y = 50
+            chart.width = 420
+            chart.height = 200
+            
+            # 设置数据
+            chart.data = [counts]
+            # 每2小时显示一个标签
+            filtered_hours = [hour if i % 2 == 0 else '' for i, hour in enumerate(hours)]
+            chart.categoryAxis.categoryNames = filtered_hours
+            
+            # 设置样式
+            chart.bars[0].fillColor = colors.blue
+            
+            # 设置标签
+            chart.categoryAxis.labels.fontName = chinese_font
+            chart.categoryAxis.labels.fontSize = 9
+            chart.valueAxis.labels.fontName = chinese_font
+            chart.valueAxis.labels.fontSize = 8
+            
+            # 添加图表到drawing
+            drawing.add(chart)
+            
+            elements.append(drawing)
+            elements.append(Spacer(1, 30))
+            
+            # 添加数据表格
+            elements.append(Paragraph("<b>时段客流分布数据</b>", info_style))
+            elements.append(Spacer(1, 10))
+            
             table_data = [["小时", "客流量"]]
             for hour, count in sorted(hourly_counts.items()):
                 table_data.append([hour, str(count)])
@@ -192,6 +290,9 @@ async def export_footfall_report(
     except HTTPException:
         raise
     except Exception as e:
+        import traceback
+        print(f"Export error: {str(e)}")
+        print(f"Traceback: {traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=f"导出客流分析报告失败: {str(e)}")
 
 

@@ -380,7 +380,7 @@ class ReportsService:
         elif request.format == 'csv':
             file_path = ReportsService._export_to_csv(data, file_name)
         elif request.format == 'excel':
-            file_path = ReportsService._export_to_excel(data, file_name)
+            file_path = ReportsService._export_to_excel(data, file_name, request.include_charts)
         else:
             raise ValueError(f"不支持的导出格式: {request.format}")
 
@@ -495,13 +495,14 @@ class ReportsService:
         return file_path
 
     @staticmethod
-    def _export_to_excel(data: Dict[str, Any], file_name: str) -> str:
+    def _export_to_excel(data: Dict[str, Any], file_name: str, include_charts: bool = True) -> str:
         """
         导出为Excel格式
 
         Args:
             data: 要导出的数据
             file_name: 文件名
+            include_charts: 是否包含图表
 
         Returns:
             str: 文件路径
@@ -575,4 +576,51 @@ class ReportsService:
         df = pd.DataFrame(rows)
         with pd.ExcelWriter(file_path, engine='openpyxl') as writer:
             df.to_excel(writer, index=False, sheet_name='数据')
+            
+            # 如果需要包含图表
+            if include_charts:
+                # 获取工作簿和工作表
+                workbook = writer.book
+                worksheet = writer.sheets['数据']
+                
+                # 创建图表
+                from openpyxl.chart import LineChart, Reference, Series
+                
+                # 查找趋势数据的范围
+                trend_start_row = 2  # 汇总数据在第2行，趋势数据从第3行开始
+                trend_end_row = trend_start_row + len(data.get('trends', [])) - 1
+                
+                if trend_end_row >= trend_start_row:
+                    # 创建转化率趋势图表
+                    chart = LineChart()
+                    chart.title = "推荐转化率趋势"
+                    chart.style = 13
+                    chart.y_axis.title = "百分比 (%)"
+                    chart.x_axis.title = "日期"
+                    
+                    # 准备数据范围
+                    dates = Reference(worksheet, min_col=10, min_row=trend_start_row, max_row=trend_end_row)
+                    click_rates = Reference(worksheet, min_col=6, min_row=trend_start_row, max_row=trend_end_row)
+                    cart_rates = Reference(worksheet, min_col=7, min_row=trend_start_row, max_row=trend_end_row)
+                    purchase_rates = Reference(worksheet, min_col=8, min_row=trend_start_row, max_row=trend_end_row)
+                    conversion_rates = Reference(worksheet, min_col=9, min_row=trend_start_row, max_row=trend_end_row)
+                    
+                    # 添加数据系列
+                    chart.add_data(click_rates, titles_from_data=False)
+                    chart.add_data(cart_rates, titles_from_data=False)
+                    chart.add_data(purchase_rates, titles_from_data=False)
+                    chart.add_data(conversion_rates, titles_from_data=False)
+                    
+                    # 设置图表系列名称
+                    chart.series[0].name = "点击率"
+                    chart.series[1].name = "加购率"
+                    chart.series[2].name = "购买率"
+                    chart.series[3].name = "转化率"
+                    
+                    # 设置X轴
+                    chart.set_categories(dates)
+                    
+                    # 添加图表到工作表
+                    worksheet.add_chart(chart, "P2")
+        
         return file_path

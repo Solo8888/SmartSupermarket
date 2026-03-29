@@ -36,6 +36,16 @@ const menuItems = computed(() => {
         name: '关联规则',
         path: '/admin/association-rules',
         icon: '🔗'
+      },
+      {
+        name: '运营报表',
+        path: '/admin/reports',
+        icon: '📊'
+      },
+      {
+        name: '用户画像',
+        path: '/admin/user-profiles',
+        icon: '👤'
       }
     )
   } else if (role === 'system_admin') {

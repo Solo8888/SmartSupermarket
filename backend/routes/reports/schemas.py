@@ -67,6 +67,7 @@ class ExportRequest(BaseModel):
     store_id: Optional[str] = Field(None, description="门店ID")
     category_id: Optional[str] = Field(None, description="商品分类ID")
     format: str = Field("csv", description="导出格式: csv, excel, json")
+    include_charts: Optional[bool] = Field(True, description="是否包含图表，仅在format为excel时生效")
 
 
 class ExportResponse(BaseModel):
