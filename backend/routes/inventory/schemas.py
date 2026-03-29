@@ -39,3 +39,17 @@ class InventoryResponse(BaseModel):
     class Config:
         from_attributes = True
 
+
+class ReplenishmentSuggestion(BaseModel):
+    """补货建议项"""
+    product_id: str = Field(..., description="商品ID")
+    product_name: str = Field(..., description="商品名称")
+    current_stock: int = Field(..., description="当前库存数量", ge=0)
+    safety_stock: int = Field(..., description="安全库存数量", ge=0)
+    suggested_replenishment: int = Field(..., description="建议补货数量", ge=0)
+
+
+class ReplenishmentResponse(BaseModel):
+    """补货建议响应"""
+    suggestions: list[ReplenishmentSuggestion] = Field(..., description="补货建议列表")
+

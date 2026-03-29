@@ -114,6 +114,58 @@ class InventoryService:
         }
 
     @staticmethod
+    def get_replenishment_suggestions(db: Session, store_id: str = None, category_id: str = None, user = None) -> list[dict]:
+        """
+        获取补货建议
+
+        Args:
+            db: 数据库会话
+            store_id: 仓库ID（可选）
+            category_id: 商品类别ID（可选）
+            user: 当前用户
+
+        Returns:
+            补货建议列表
+        """
+        # 构建查询，关联Inventory和Product表
+        query = db.query(Inventory, Product).join(Product, Inventory.product_id == Product.id)
+        
+        # 系统管理员可以查看所有库存，其他用户只能查看关联门店的库存
+        if user and user.role != 'system_admin':
+            user_store_ids = InventoryService.get_user_stores(db, user.id)
+            if user_store_ids:
+                query = query.filter(Product.store_id.in_(user_store_ids))
+            else:
+                # 如果用户没有关联门店，返回空列表
+                return []
+        
+        # 按仓库筛选
+        if store_id:
+            query = query.filter(Product.store_id == store_id)
+        
+        # 按商品类别筛选
+        if category_id:
+            query = query.filter(Product.category_id == category_id)
+        
+        # 获取所有库存记录
+        results = query.all()
+        
+        suggestions = []
+        for inventory, product in results:
+            # 计算建议补货量：max(0, safety_stock * 2 - current_stock)
+            suggested_replenishment = max(0, inventory.warning_quantity * 2 - inventory.stock_quantity)
+            
+            suggestions.append({
+                "product_id": product.id,
+                "product_name": product.name,
+                "current_stock": inventory.stock_quantity,
+                "safety_stock": inventory.warning_quantity,
+                "suggested_replenishment": suggested_replenishment
+            })
+        
+        return suggestions
+
+    @staticmethod
     def update_inventory(db: Session, product_id: str, payload: InventoryUpdate, user) -> dict:
         """
         更新库存

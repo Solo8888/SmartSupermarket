@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from models import get_db, User
 from core.permitions import require_role
-from .schemas import InventoryResponse, InventoryUpdate, StockInRequest, StockOutRequest
+from .schemas import InventoryResponse, InventoryUpdate, StockInRequest, StockOutRequest, ReplenishmentResponse
 from .service import InventoryService
 from fastapi_pagination import Page, Params
 
@@ -124,4 +124,30 @@ async def stock_out(
     """
     inventory = InventoryService.stock_out(db, product_id, payload, user)
     return InventoryResponse(**inventory)
+
+
+@inventory_router.get('/optimization/replenishment', response_model=ReplenishmentResponse)
+async def get_replenishment_suggestions(
+        store_id: str = None,
+        category_id: str = None,
+        user: User = Depends(require_role('inventory_manager')),
+        db: Session = Depends(get_db)
+):
+    """
+    获取补货建议接口
+
+    根据当前库存和安全库存计算建议补货量。
+    计算公式：suggested_replenishment = max(0, safety_stock * 2 - current_stock)
+
+    Args:
+        store_id: 仓库ID（可选），用于筛选特定仓库的补货建议
+        category_id: 商品类别ID（可选），用于筛选特定类别的补货建议
+        user: 当前用户
+        db: 数据库会话
+
+    Returns:
+        补货建议列表
+    """
+    suggestions = InventoryService.get_replenishment_suggestions(db, store_id, category_id, user)
+    return ReplenishmentResponse(suggestions=suggestions)
 
