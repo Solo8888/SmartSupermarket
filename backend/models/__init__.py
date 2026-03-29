@@ -40,6 +40,7 @@ from .promotion_category import PromotionCategory
 from .cart import Cart, CartItem
 from .review import Review
 from .store_product import StoreProduct
+from .forecast import Forecast, ForecastAdjustment
 
 
 def get_db() -> Session:
