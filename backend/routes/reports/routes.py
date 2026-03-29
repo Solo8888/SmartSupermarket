@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from core.permitions import require_role
 from models import get_db
-from .schemas import RecommendationConversionRequest, RecommendationConversionResponse
+from .schemas import RecommendationConversionRequest, RecommendationConversionResponse, ExportRequest, ExportResponse
 from .service import ReportsService
 
 reports_router = APIRouter(prefix='/reports', tags=['reports'])
@@ -66,3 +66,41 @@ async def get_recommendation_conversion(
         return response
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"获取推荐转化率分析失败: {str(e)}")
+
+
+@reports_router.post('/export', response_model=ExportResponse)
+async def export_report(
+    request: ExportRequest,
+    current_user = Depends(require_role(['system_admin', 'operations_manager'], mode='in')),
+    db: Session = Depends(get_db)
+):
+    """
+    导出报表
+
+    导出各种报表数据，支持 JSON、CSV 和 Excel 格式。
+
+    Args:
+        request: 导出请求参数
+        current_user: 当前用户
+        db: 数据库会话
+
+    Returns:
+        导出结果，包含文件 URL 和相关信息
+    """
+    try:
+        # 调用服务导出报表
+        result = ReportsService.export_report(db, request)
+
+        # 构建响应
+        response = ExportResponse(
+            file_url=result['file_url'],
+            file_name=result['file_name'],
+            format=result['format'],
+            size=result['size']
+        )
+
+        return response
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"导出报表失败: {str(e)}")

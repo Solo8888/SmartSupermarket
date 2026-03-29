@@ -1,11 +1,14 @@
 # Reports service
 # Implement business logic for reports
 
+import os
+import json
+import pandas as pd
 from sqlalchemy.orm import Session
 from sqlalchemy import func, and_, or_, extract
 from datetime import datetime, date, timedelta
 from typing import Dict, List, Any, Optional
-from .schemas import RecommendationConversionRequest, RecommendationConversionResponse, RecommendationConversionMetrics, RecommendationConversionTrend, RecommendationConversionDetail
+from .schemas import RecommendationConversionRequest, RecommendationConversionResponse, RecommendationConversionMetrics, RecommendationConversionTrend, RecommendationConversionDetail, ExportRequest, ExportResponse
 from models.product import Product
 from models.order import Order, OrderItem
 from models.cart import Cart, CartItem
@@ -13,6 +16,10 @@ from models.cart import Cart, CartItem
 # 简单的内存缓存
 _cache = {}
 _CACHE_TTL = 3600  # 缓存过期时间（秒）
+
+# 导出文件存储目录
+EXPORT_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'uploads', 'exports')
+os.makedirs(EXPORT_DIR, exist_ok=True)
 
 
 class ReportsService:
@@ -333,3 +340,239 @@ class ReportsService:
             List[Dict]: 详细数据列表
         """
         return recommendation_data
+
+    @staticmethod
+    def export_report(db: Session, request: ExportRequest) -> Dict[str, Any]:
+        """
+        导出报表
+
+        Args:
+            db: 数据库会话
+            request: 导出请求参数
+
+        Returns:
+            Dict: 导出结果
+        """
+        # 根据报表类型获取数据
+        if request.report_type == 'recommendation_conversion':
+            # 构建推荐转化率分析请求
+            conversion_request = RecommendationConversionRequest(
+                start_date=request.start_date,
+                end_date=request.end_date,
+                store_id=request.store_id,
+                category_id=request.category_id,
+                time_granularity='day',
+                include_details=True
+            )
+            
+            # 获取分析数据
+            data = ReportsService.get_recommendation_conversion(db, conversion_request)
+        else:
+            raise ValueError(f"不支持的报表类型: {request.report_type}")
+
+        # 生成文件名
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        file_name = f"{request.report_type}_{timestamp}"
+
+        # 根据格式导出
+        if request.format == 'json':
+            file_path = ReportsService._export_to_json(data, file_name)
+        elif request.format == 'csv':
+            file_path = ReportsService._export_to_csv(data, file_name)
+        elif request.format == 'excel':
+            file_path = ReportsService._export_to_excel(data, file_name)
+        else:
+            raise ValueError(f"不支持的导出格式: {request.format}")
+
+        # 生成文件URL
+        file_url = f"/uploads/exports/{os.path.basename(file_path)}"
+        file_size = os.path.getsize(file_path)
+
+        return {
+            "file_url": file_url,
+            "file_name": os.path.basename(file_path),
+            "format": request.format,
+            "size": file_size
+        }
+
+    @staticmethod
+    def _export_to_json(data: Dict[str, Any], file_name: str) -> str:
+        """
+        导出为JSON格式
+
+        Args:
+            data: 要导出的数据
+            file_name: 文件名
+
+        Returns:
+            str: 文件路径
+        """
+        file_path = os.path.join(EXPORT_DIR, f"{file_name}.json")
+        with open(file_path, 'w', encoding='utf-8') as f:
+            json.dump(data, f, ensure_ascii=False, indent=2, default=str)
+        return file_path
+
+    @staticmethod
+    def _export_to_csv(data: Dict[str, Any], file_name: str) -> str:
+        """
+        导出为CSV格式
+
+        Args:
+            data: 要导出的数据
+            file_name: 文件名
+
+        Returns:
+            str: 文件路径
+        """
+        file_path = os.path.join(EXPORT_DIR, f"{file_name}.csv")
+        
+        # 准备数据
+        rows = []
+        
+        # 添加汇总数据
+        summary = data.get('summary', {})
+        rows.append({
+            '类型': '汇总',
+            '展示次数': summary.get('impressions', 0),
+            '点击次数': summary.get('clicks', 0),
+            '加购次数': summary.get('add_to_carts', 0),
+            '购买次数': summary.get('purchases', 0),
+            '点击率(%)': summary.get('click_rate', 0),
+            '加购率(%)': summary.get('cart_rate', 0),
+            '购买率(%)': summary.get('purchase_rate', 0),
+            '转化率(%)': summary.get('conversion_rate', 0),
+            '日期': '',
+            '商品ID': '',
+            '商品名称': '',
+            '门店ID': '',
+            '分类ID': '',
+            '用户ID': ''
+        })
+        
+        # 添加趋势数据
+        for trend in data.get('trends', []):
+            rows.append({
+                '类型': '趋势',
+                '展示次数': trend['metrics'].get('impressions', 0),
+                '点击次数': trend['metrics'].get('clicks', 0),
+                '加购次数': trend['metrics'].get('add_to_carts', 0),
+                '购买次数': trend['metrics'].get('purchases', 0),
+                '点击率(%)': trend['metrics'].get('click_rate', 0),
+                '加购率(%)': trend['metrics'].get('cart_rate', 0),
+                '购买率(%)': trend['metrics'].get('purchase_rate', 0),
+                '转化率(%)': trend['metrics'].get('conversion_rate', 0),
+                '日期': trend.get('date', ''),
+                '商品ID': '',
+                '商品名称': '',
+                '门店ID': '',
+                '分类ID': '',
+                '用户ID': ''
+            })
+        
+        # 添加详细数据
+        for detail in data.get('details', []):
+            rows.append({
+                '类型': '详细',
+                '展示次数': 1,
+                '点击次数': 1 if detail.get('clicked_at') else 0,
+                '加购次数': 1 if detail.get('added_to_cart_at') else 0,
+                '购买次数': 1 if detail.get('purchased_at') else 0,
+                '点击率(%)': '',
+                '加购率(%)': '',
+                '购买率(%)': '',
+                '转化率(%)': '',
+                '日期': detail.get('recommended_at', ''),
+                '商品ID': detail.get('product_id', ''),
+                '商品名称': detail.get('product_name', ''),
+                '门店ID': detail.get('store_id', ''),
+                '分类ID': detail.get('category_id', ''),
+                '用户ID': detail.get('user_id', '')
+            })
+        
+        # 创建DataFrame并导出
+        df = pd.DataFrame(rows)
+        df.to_csv(file_path, index=False, encoding='utf-8-sig')
+        return file_path
+
+    @staticmethod
+    def _export_to_excel(data: Dict[str, Any], file_name: str) -> str:
+        """
+        导出为Excel格式
+
+        Args:
+            data: 要导出的数据
+            file_name: 文件名
+
+        Returns:
+            str: 文件路径
+        """
+        file_path = os.path.join(EXPORT_DIR, f"{file_name}.xlsx")
+        
+        # 准备数据
+        rows = []
+        
+        # 添加汇总数据
+        summary = data.get('summary', {})
+        rows.append({
+            '类型': '汇总',
+            '展示次数': summary.get('impressions', 0),
+            '点击次数': summary.get('clicks', 0),
+            '加购次数': summary.get('add_to_carts', 0),
+            '购买次数': summary.get('purchases', 0),
+            '点击率(%)': summary.get('click_rate', 0),
+            '加购率(%)': summary.get('cart_rate', 0),
+            '购买率(%)': summary.get('purchase_rate', 0),
+            '转化率(%)': summary.get('conversion_rate', 0),
+            '日期': '',
+            '商品ID': '',
+            '商品名称': '',
+            '门店ID': '',
+            '分类ID': '',
+            '用户ID': ''
+        })
+        
+        # 添加趋势数据
+        for trend in data.get('trends', []):
+            rows.append({
+                '类型': '趋势',
+                '展示次数': trend['metrics'].get('impressions', 0),
+                '点击次数': trend['metrics'].get('clicks', 0),
+                '加购次数': trend['metrics'].get('add_to_carts', 0),
+                '购买次数': trend['metrics'].get('purchases', 0),
+                '点击率(%)': trend['metrics'].get('click_rate', 0),
+                '加购率(%)': trend['metrics'].get('cart_rate', 0),
+                '购买率(%)': trend['metrics'].get('purchase_rate', 0),
+                '转化率(%)': trend['metrics'].get('conversion_rate', 0),
+                '日期': trend.get('date', ''),
+                '商品ID': '',
+                '商品名称': '',
+                '门店ID': '',
+                '分类ID': '',
+                '用户ID': ''
+            })
+        
+        # 添加详细数据
+        for detail in data.get('details', []):
+            rows.append({
+                '类型': '详细',
+                '展示次数': 1,
+                '点击次数': 1 if detail.get('clicked_at') else 0,
+                '加购次数': 1 if detail.get('added_to_cart_at') else 0,
+                '购买次数': 1 if detail.get('purchased_at') else 0,
+                '点击率(%)': '',
+                '加购率(%)': '',
+                '购买率(%)': '',
+                '转化率(%)': '',
+                '日期': detail.get('recommended_at', ''),
+                '商品ID': detail.get('product_id', ''),
+                '商品名称': detail.get('product_name', ''),
+                '门店ID': detail.get('store_id', ''),
+                '分类ID': detail.get('category_id', ''),
+                '用户ID': detail.get('user_id', '')
+            })
+        
+        # 创建DataFrame并导出
+        df = pd.DataFrame(rows)
+        with pd.ExcelWriter(file_path, engine='openpyxl') as writer:
+            df.to_excel(writer, index=False, sheet_name='数据')
+        return file_path

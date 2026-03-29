@@ -57,3 +57,22 @@ class RecommendationConversionResponse(BaseModel):
     details: List[RecommendationConversionDetail] = Field(default_factory=list, description="详细数据")
     filters: Dict[str, Any] = Field(default_factory=dict, description="应用的过滤器")
     generated_at: datetime = Field(default_factory=datetime.now, description="生成时间")
+
+
+class ExportRequest(BaseModel):
+    """导出请求"""
+    report_type: str = Field(..., description="报表类型: recommendation_conversion")
+    start_date: Optional[date] = Field(None, description="开始日期")
+    end_date: Optional[date] = Field(None, description="结束日期")
+    store_id: Optional[str] = Field(None, description="门店ID")
+    category_id: Optional[str] = Field(None, description="商品分类ID")
+    format: str = Field("csv", description="导出格式: csv, excel, json")
+
+
+class ExportResponse(BaseModel):
+    """导出响应"""
+    file_url: str = Field(..., description="导出文件的URL")
+    file_name: str = Field(..., description="导出文件的名称")
+    format: str = Field(..., description="导出格式")
+    size: int = Field(..., description="文件大小(字节)")
+    generated_at: datetime = Field(default_factory=datetime.now, description="生成时间")
