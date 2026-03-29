@@ -14,6 +14,7 @@ from .review.routes import review_router
 from .recommendations.routes import recommendation_router
 from .customer_flow.routes import customer_flow_router
 from .analytics import analytics_router
+from .reports import reports_router
 
 __all__ = [
     "user_router",
@@ -30,5 +31,6 @@ __all__ = [
     "review_router",
     "recommendation_router",
     "customer_flow_router",
-    "analytics_router"
+    "analytics_router",
+    "reports_router"
 ]
