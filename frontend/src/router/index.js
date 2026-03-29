@@ -77,6 +77,12 @@ const routes = [
         name: 'CustomerFlow',
         component: () => import('../views/admin/CustomerFlow.vue'),
         meta: { title: '客流管理', requiresRole: 'operations_manager' }
+      },
+      {
+        path: 'association-rules',
+        name: 'AssociationRules',
+        component: () => import('../views/admin/AssociationRules.vue'),
+        meta: { title: '关联规则分析', requiresRole: 'operations_manager' }
       }
     ]
   },

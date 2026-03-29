@@ -31,6 +31,11 @@ const menuItems = computed(() => {
         name: '客流管理',
         path: '/admin/customer-flow',
         icon: '👥'
+      },
+      {
+        name: '关联规则',
+        path: '/admin/association-rules',
+        icon: '🔗'
       }
     )
   } else if (role === 'system_admin') {
