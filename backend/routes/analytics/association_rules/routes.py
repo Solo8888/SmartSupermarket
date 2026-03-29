@@ -49,8 +49,6 @@ async def get_association_rules(
         )
         
         return data
-    except HTTPException:
-        raise
     except ValueError as e:
         if "does not match format" in str(e):
             raise HTTPException(status_code=400, detail=f"日期格式错误: {str(e)}")

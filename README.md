@@ -16,7 +16,7 @@
 - **Redis** - 高性能缓存
 
 ### Web应用框架
-- **Flask** - Python Web后端框架
+- **FastAPI** - Python Web后端框架
 - **Vue.js 3** - 桌面端Web前端框架
 - **Vite** - 前端构建工具
 
@@ -32,7 +32,7 @@
 - **Spark集群**：集成在Hadoop集群中
 - **数据存储层**：MySQL(业务数据) + PostgreSQL(Hive元数据) + Redis(缓存)
 - **消息队列**：Kafka + Zookeeper
-- **Web应用层**：Flask后端 + Vue.js前端
+- **Web应用层**：FastAPI后端 + Vue.js前端
 - **数据分析**：Jupyter Notebook
 
 ## 🛠️ 环境要求
@@ -128,8 +128,8 @@ make.bat
 
 ```
 SmartSupermarket/
-├── backend/              # Flask后端应用
-│   ├── app.py           # 主应用文件
+├── backend/              # FastAPI后端应用
+│   ├── main.py          # 主应用文件
 │   ├── requirements.txt # Python依赖
 │   └── Dockerfile       # 后端镜像配置
 ├── base/                 # 基础镜像配置
@@ -170,7 +170,7 @@ SmartSupermarket/
 ```bash
 cd backend
 pip install -r requirements.txt
-python app.py
+python run.py
 ```
 
 ### 前端开发
