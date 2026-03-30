@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from models import get_db, User
 from core.permitions import require_role
-from .schemas import InventoryResponse, InventoryUpdate, StockInRequest, StockOutRequest, ReplenishmentResponse, TransferPlansResponse
+from .schemas import InventoryResponse, InventoryUpdate, StockInRequest, StockOutRequest, ReplenishmentResponse, TransferPlansResponse, ThresholdUpdateRequest, ThresholdUpdateResponse
 from .service import InventoryService
 from fastapi_pagination import Page, Params
 
@@ -179,4 +179,29 @@ async def get_transfer_plans(
     """
     transfer_plans = InventoryService.get_transfer_plans(db, product_id, user)
     return TransferPlansResponse(transfer_plans=transfer_plans)
+
+
+@inventory_router.put('/optimization/threshold/{product_id}', response_model=ThresholdUpdateResponse)
+async def update_threshold(
+        product_id: str,
+        payload: ThresholdUpdateRequest,
+        user: User = Depends(require_role('inventory_manager')),
+        db: Session = Depends(get_db)
+):
+    """
+    更新库存预警阈值接口
+
+    单独设置商品的库存预警阈值（安全库存），用于库存优化和补货建议计算。
+
+    Args:
+        product_id: 商品ID
+        payload: 预警阈值更新请求体
+        user: 当前用户
+        db: 数据库会话
+
+    Returns:
+        更新后的预警阈值信息
+    """
+    result = InventoryService.update_threshold(db, product_id, payload.warning_quantity, user)
+    return ThresholdUpdateResponse(**result)
 

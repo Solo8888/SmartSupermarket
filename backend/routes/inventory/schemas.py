@@ -70,3 +70,17 @@ class TransferPlansResponse(BaseModel):
     """调拨方案响应"""
     transfer_plans: list[TransferPlan] = Field(..., description="调拨方案列表")
 
+
+class ThresholdUpdateRequest(BaseModel):
+    """库存预警阈值更新请求"""
+    warning_quantity: int = Field(..., description="预警数量（安全库存）", ge=0)
+
+
+class ThresholdUpdateResponse(BaseModel):
+    """库存预警阈值更新响应"""
+    product_id: str = Field(..., description="商品ID")
+    product_name: str = Field(..., description="商品名称")
+    warning_quantity: int = Field(..., description="更新后的预警数量")
+    updated_at: datetime = Field(..., description="更新时间")
+    message: str = Field(default="预警阈值更新成功", description="操作结果消息")
+

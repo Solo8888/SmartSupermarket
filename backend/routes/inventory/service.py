@@ -290,6 +290,54 @@ class InventoryService:
         return transfer_plans
 
     @staticmethod
+    def update_threshold(db: Session, product_id: str, warning_quantity: int, user) -> dict:
+        """
+        更新库存预警阈值
+
+        Args:
+            db: 数据库会话
+            product_id: 商品ID
+            warning_quantity: 预警数量（安全库存）
+            user: 当前用户
+
+        Returns:
+            更新后的库存信息
+
+        Raises:
+            NotFoundError: 库存不存在
+            ClientError: 权限不足
+        """
+        # 获取商品信息，检查门店权限
+        product = db.query(Product).filter(Product.id == product_id).first()
+        if not product:
+            raise NotFoundError("商品不存在")
+        
+        # 系统管理员可以更新所有库存，其他用户只能更新关联门店的库存
+        if user.role != 'system_admin':
+            user_store_ids = InventoryService.get_user_stores(db, user.id)
+            if product.store_id not in user_store_ids:
+                raise ClientError("权限不足，无法更新此商品库存预警阈值", "PERMISSION_DENIED")
+        
+        # 获取库存信息
+        inventory = db.query(Inventory).filter(Inventory.product_id == product_id).first()
+        if not inventory:
+            raise NotFoundError("库存不存在")
+
+        # 更新预警阈值
+        inventory.warning_quantity = warning_quantity
+        inventory.updated_at = func.current_timestamp()
+
+        db.commit()
+        db.refresh(inventory)
+
+        return {
+            "product_id": product_id,
+            "product_name": product.name,
+            "warning_quantity": inventory.warning_quantity,
+            "updated_at": inventory.updated_at
+        }
+
+    @staticmethod
     def update_inventory(db: Session, product_id: str, payload: InventoryUpdate, user) -> dict:
         """
         更新库存
