@@ -53,3 +53,20 @@ class ReplenishmentResponse(BaseModel):
     """补货建议响应"""
     suggestions: list[ReplenishmentSuggestion] = Field(..., description="补货建议列表")
 
+
+class TransferPlan(BaseModel):
+    """调拨方案项"""
+    product_id: str = Field(..., description="商品ID")
+    product_name: str = Field(..., description="商品名称")
+    from_store_id: str = Field(..., description="调出门店ID")
+    from_store_name: str = Field(..., description="调出门店名称")
+    to_store_id: str = Field(..., description="调入门店ID")
+    to_store_name: str = Field(..., description="调入门店名称")
+    transfer_quantity: int = Field(..., description="调拨数量", gt=0)
+    reason: str = Field(..., description="调拨原因说明")
+
+
+class TransferPlansResponse(BaseModel):
+    """调拨方案响应"""
+    transfer_plans: list[TransferPlan] = Field(..., description="调拨方案列表")
+

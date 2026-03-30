@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from models import get_db, User
 from core.permitions import require_role
-from .schemas import InventoryResponse, InventoryUpdate, StockInRequest, StockOutRequest, ReplenishmentResponse
+from .schemas import InventoryResponse, InventoryUpdate, StockInRequest, StockOutRequest, ReplenishmentResponse, TransferPlansResponse
 from .service import InventoryService
 from fastapi_pagination import Page, Params
 
@@ -150,4 +150,33 @@ async def get_replenishment_suggestions(
     """
     suggestions = InventoryService.get_replenishment_suggestions(db, store_id, category_id, user)
     return ReplenishmentResponse(suggestions=suggestions)
+
+
+@inventory_router.get('/optimization/transfer', response_model=TransferPlansResponse)
+async def get_transfer_plans(
+        product_id: str = None,
+        user: User = Depends(require_role('inventory_manager')),
+        db: Session = Depends(get_db)
+):
+    """
+    获取库存调拨方案接口
+
+    分析各门店的库存状况，识别库存不平衡的商品，生成库存调拨方案。
+
+    算法逻辑：
+    1. 识别库存不平衡：计算每个商品在各门店的库存标准差
+    2. 确定调出门店：库存量 > 平均库存量 + 安全库存的门店
+    3. 确定调入门店：库存量 < 安全库存的门店
+    4. 计算调拨数量：确保调出门店调出后仍有足够库存，调入门店调入后达到安全库存水平
+
+    Args:
+        product_id: 商品ID（可选），用于筛选特定商品的调拨方案
+        user: 当前用户
+        db: 数据库会话
+
+    Returns:
+        调拨方案列表
+    """
+    transfer_plans = InventoryService.get_transfer_plans(db, product_id, user)
+    return TransferPlansResponse(transfer_plans=transfer_plans)
 

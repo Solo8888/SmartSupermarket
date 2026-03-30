@@ -8,10 +8,12 @@ from sqlalchemy import func
 from models.inventory import Inventory
 from models.product import Product
 from models.user_store import UserStore
+from models.store import Store
 from .schemas import InventoryUpdate, StockInRequest, StockOutRequest
 from core.exceptions import NotFoundError, ClientError
 from fastapi_pagination import Page, Params
 from fastapi_pagination.ext.sqlalchemy import paginate as sqlalchemy_paginate
+import math
 
 
 class InventoryService:
@@ -164,6 +166,128 @@ class InventoryService:
             })
         
         return suggestions
+
+    @staticmethod
+    def get_transfer_plans(db: Session, product_id: str = None, user = None) -> list[dict]:
+        """
+        获取库存调拨方案
+
+        Args:
+            db: 数据库会话
+            product_id: 商品ID（可选）
+            user: 当前用户
+
+        Returns:
+            调拨方案列表
+        """
+        # 构建查询，获取所有商品在各门店的库存信息
+        query = db.query(
+            Product.id.label('product_id'),
+            Product.name.label('product_name'),
+            Product.store_id,
+            Store.name.label('store_name'),
+            Inventory.stock_quantity,
+            Inventory.warning_quantity
+        ).join(
+            Inventory, Product.id == Inventory.product_id
+        ).join(
+            Store, Product.store_id == Store.id
+        ).filter(
+            Store.status == 'active'
+        )
+        
+        # 按商品ID筛选
+        if product_id:
+            query = query.filter(Product.id == product_id)
+        
+        # 系统管理员可以查看所有库存，其他用户只能查看关联门店的库存
+        if user and user.role != 'system_admin':
+            user_store_ids = InventoryService.get_user_stores(db, user.id)
+            if user_store_ids:
+                query = query.filter(Product.store_id.in_(user_store_ids))
+            else:
+                # 如果用户没有关联门店，返回空列表
+                return []
+        
+        # 获取所有库存记录
+        results = query.all()
+        
+        # 按商品ID分组，统计每个商品在各门店的库存情况
+        product_inventory = {}
+        for row in results:
+            pid = row.product_id
+            if pid not in product_inventory:
+                product_inventory[pid] = {
+                    'product_id': pid,
+                    'product_name': row.product_name,
+                    'stores': []
+                }
+            product_inventory[pid]['stores'].append({
+                'store_id': row.store_id,
+                'store_name': row.store_name,
+                'stock_quantity': row.stock_quantity,
+                'warning_quantity': row.warning_quantity
+            })
+        
+        # 生成调拨方案
+        transfer_plans = []
+        
+        for pid, product_data in product_inventory.items():
+            stores = product_data['stores']
+            
+            # 如果只有一个门店，无法调拨
+            if len(stores) < 2:
+                continue
+            
+            # 计算平均库存和安全库存
+            total_stock = sum(s['stock_quantity'] for s in stores)
+            avg_stock = total_stock / len(stores)
+            avg_safety_stock = sum(s['warning_quantity'] for s in stores) / len(stores)
+            
+            # 识别调出门店和调入门店
+            from_stores = []  # 库存过剩的门店
+            to_stores = []    # 库存不足的门店
+            
+            for store in stores:
+                # 调出门店：库存量 > 平均库存量 + 安全库存
+                if store['stock_quantity'] > avg_stock + avg_safety_stock:
+                    from_stores.append(store)
+                # 调入门店：库存量 < 安全库存
+                elif store['stock_quantity'] < store['warning_quantity']:
+                    to_stores.append(store)
+            
+            # 生成调拨方案
+            for from_store in from_stores:
+                for to_store in to_stores:
+                    # 计算调拨数量
+                    available_to_transfer = from_store['stock_quantity'] - (avg_stock + avg_safety_stock)
+                    needed_quantity = to_store['warning_quantity'] * 2 - to_store['stock_quantity']
+                    
+                    transfer_quantity = min(
+                        max(0, available_to_transfer),
+                        max(0, needed_quantity)
+                    )
+                    
+                    # 只有当调拨数量大于0时才生成方案
+                    if transfer_quantity > 0:
+                        # 生成调拨原因
+                        reason = f"{from_store['store_name']}库存过剩({from_store['stock_quantity']}件)，{to_store['store_name']}库存不足({to_store['stock_quantity']}件)"
+                        
+                        transfer_plans.append({
+                            'product_id': product_data['product_id'],
+                            'product_name': product_data['product_name'],
+                            'from_store_id': from_store['store_id'],
+                            'from_store_name': from_store['store_name'],
+                            'to_store_id': to_store['store_id'],
+                            'to_store_name': to_store['store_name'],
+                            'transfer_quantity': transfer_quantity,
+                            'reason': reason
+                        })
+        
+        # 按调拨数量从大到小排序
+        transfer_plans.sort(key=lambda x: x['transfer_quantity'], reverse=True)
+        
+        return transfer_plans
 
     @staticmethod
     def update_inventory(db: Session, product_id: str, payload: InventoryUpdate, user) -> dict:
